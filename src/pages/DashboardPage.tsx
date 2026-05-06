@@ -15,7 +15,6 @@ import MaturityBadge from '../components/MaturityBadge';
 import RemediationItem from '../components/RemediationItem';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
-const PIE_LABELS = ['Passed', 'Failed', 'Partial', 'N/A'];
 
 function toast(msg: string) {
   // Simple toast using alert for MVP

@@ -96,14 +96,15 @@ export default function WizardPage() {
   };
 
   const toggleArrayValue = <T extends string>(
-    key: keyof typeof wizardAnswers,
+    key: 'states' | 'dataTypes' | 'customerGeography' | 'businessContext',
     value: T
   ) => {
     const current = wizardAnswers[key] as T[];
     const updated = current.includes(value)
       ? current.filter((v) => v !== value)
       : [...current, value];
-    setWizardAnswer(key as 'dataTypes', updated as typeof wizardAnswers[typeof key]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setWizardAnswer(key, updated as any);
   };
 
   const filteredStates = usStates.filter((s) =>
