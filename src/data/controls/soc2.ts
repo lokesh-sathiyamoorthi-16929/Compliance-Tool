@@ -25,7 +25,7 @@ export const soc2Controls: Control[] = [
       'Enforce MFA for all user access to production systems',
       'Conduct quarterly access reviews and document results',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -51,7 +51,7 @@ export const soc2Controls: Control[] = [
       'Require manager approval for all system access requests',
       'Automate new user provisioning with appropriate role assignment',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -78,7 +78,7 @@ export const soc2Controls: Control[] = [
       'Implement SoD controls for critical financial and operational functions',
       'Use PAM360 to enforce least privilege for privileged accounts',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -105,7 +105,7 @@ export const soc2Controls: Control[] = [
       'Configure UEBA rules for anomaly detection',
       'Establish alert response SLAs based on severity',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -131,7 +131,7 @@ export const soc2Controls: Control[] = [
       'Define security event severity classification criteria',
       'Establish escalation procedures for significant security events',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -158,7 +158,7 @@ export const soc2Controls: Control[] = [
       'Configure ADAudit Plus to detect and alert on unauthorized changes',
       'Maintain change log with before/after states for all production changes',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -183,7 +183,7 @@ export const soc2Controls: Control[] = [
       'Implement redundancy for critical system components',
       'Configure Log360 to monitor system availability and alert on failures',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -208,7 +208,7 @@ export const soc2Controls: Control[] = [
       'Configure Endpoint Central for system image backups',
       'Test backup restoration quarterly',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -233,7 +233,7 @@ export const soc2Controls: Control[] = [
       'Configure Log360 to monitor for processing errors and anomalies',
       'Establish data quality checks and reconciliation processes',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
   {
@@ -258,7 +258,7 @@ export const soc2Controls: Control[] = [
       'Implement process for responding to data subject access requests (DSARs)',
       'Maintain privacy incident log and escalation procedures',
     ],
-    referenceUrl: 'https://www.aicpa.org/resources/download/2017-trust-services-criteria',
+    referenceUrl: 'https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2',
     inItScope: true,
   },
 ];

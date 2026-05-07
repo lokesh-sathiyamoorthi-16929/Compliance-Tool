@@ -51,8 +51,7 @@ export default function LandingPage() {
             Posture Management
           </h1>
           <p className="text-xl text-blue-100 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Discover your compliance obligations, map them to ManageEngine products, and
-            continuously score your posture — all in one platform.
+            Know exactly which IT compliance frameworks apply, which ManageEngine products cover them, and your posture score — in minutes, not months.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

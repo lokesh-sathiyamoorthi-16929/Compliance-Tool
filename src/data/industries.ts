@@ -2,7 +2,7 @@ export interface IndustryOption {
   id: string;
   label: string;
   description: string;
-  icon: string;
+  iconName: string;
 }
 
 export const industries: IndustryOption[] = [
@@ -10,60 +10,60 @@ export const industries: IndustryOption[] = [
     id: 'healthcare',
     label: 'Healthcare',
     description: 'Hospitals, clinics, health plans, clearinghouses, and business associates',
-    icon: '🏥',
+    iconName: 'HeartPulse',
   },
   {
     id: 'financial',
     label: 'Financial Services',
     description: 'Banks, credit unions, investment firms, insurance, and fintech',
-    icon: '🏦',
+    iconName: 'Banknote',
   },
   {
     id: 'retail',
     label: 'Retail / E-commerce',
     description: 'Retailers, e-commerce platforms, and merchants accepting card payments',
-    icon: '🛒',
+    iconName: 'ShoppingCart',
   },
   {
     id: 'technology',
     label: 'Tech / SaaS',
     description: 'Software companies, cloud service providers, and technology platforms',
-    icon: '💻',
+    iconName: 'Laptop',
   },
   {
     id: 'education',
     label: 'Education',
     description: 'K-12 schools, universities, and educational institutions receiving federal funds',
-    icon: '🎓',
+    iconName: 'GraduationCap',
   },
   {
     id: 'government',
     label: 'Government Contractor',
     description: 'Companies with federal contracts, DoD suppliers, and defense contractors',
-    icon: '🏛️',
+    iconName: 'Landmark',
   },
   {
     id: 'law_enforcement',
     label: 'Law Enforcement',
     description: 'Police departments, sheriff offices, fusion centers, and agencies handling CJI',
-    icon: '🚔',
+    iconName: 'Shield',
   },
   {
     id: 'energy',
     label: 'Energy / Utilities',
     description: 'Electric utilities, oil & gas, water systems, and critical infrastructure',
-    icon: '⚡',
+    iconName: 'Zap',
   },
   {
     id: 'manufacturing',
     label: 'Manufacturing',
     description: 'Discrete and process manufacturers, including defense industrial base',
-    icon: '🏭',
+    iconName: 'Factory',
   },
   {
     id: 'other',
     label: 'Other',
     description: 'Other industries and business types',
-    icon: '🏢',
+    iconName: 'Building2',
   },
 ];
