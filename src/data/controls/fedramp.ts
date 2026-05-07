@@ -34,7 +34,7 @@ export const fedrampControls: Control[] = [
       'Run monthly privileged access recertification',
       'Track exceptions and compensating controls in SSP artifacts',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -70,7 +70,7 @@ export const fedrampControls: Control[] = [
       'Apply conditional access based on risk posture and geography',
       'Audit remote access policy exceptions weekly',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -100,7 +100,7 @@ export const fedrampControls: Control[] = [
       'Define ingestion SLOs for mission-critical log sources',
       'Generate monthly FedRAMP evidence reports automatically',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -130,7 +130,7 @@ export const fedrampControls: Control[] = [
       'Tune and suppress noisy detections with documented rationale',
       'Report review and triage metrics each month',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -160,7 +160,7 @@ export const fedrampControls: Control[] = [
       'Practice response exercises with cloud operations and security teams',
       'Track closure of post-incident action items',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -190,7 +190,7 @@ export const fedrampControls: Control[] = [
       'Record evidence handling decisions for each major incident',
       'Review incident documentation quality monthly',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -226,7 +226,7 @@ export const fedrampControls: Control[] = [
       'Integrate vulnerability findings with patch deployment workflows',
       'Provide weekly unresolved high-severity risk reports',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -262,7 +262,7 @@ export const fedrampControls: Control[] = [
       'Track open POA&M items and aging by severity',
       'Automate evidence collection for recurring controls',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -298,7 +298,7 @@ export const fedrampControls: Control[] = [
       'Alert on unauthorized baseline drift in production',
       'Review configuration exceptions monthly with security leadership',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
   {
@@ -328,7 +328,7 @@ export const fedrampControls: Control[] = [
       'Measure and improve mean time to detect and respond',
       'Run threat hunt cycles for critical federal workloads',
     ],
-    referenceUrl: 'https://www.fedramp.gov/',
+    referenceUrl: 'https://www.fedramp.gov/baselines/',
     inItScope: true,
   },
 ];

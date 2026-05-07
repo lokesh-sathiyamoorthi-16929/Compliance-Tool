@@ -34,7 +34,7 @@ export const nist80053Controls: Control[] = [
       'Run monthly account recertification for privileged groups',
       'Document exceptions and compensating controls',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -64,7 +64,7 @@ export const nist80053Controls: Control[] = [
       'Apply time-bound access for admin operations',
       'Review privileged command logs weekly',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -100,7 +100,7 @@ export const nist80053Controls: Control[] = [
       'Configure ingestion health alerts for critical log sources',
       'Validate event schema mapping after major releases',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -130,7 +130,7 @@ export const nist80053Controls: Control[] = [
       'Tune detection content for privileged misuse and exfiltration patterns',
       'Track alert quality metrics and continuously improve rules',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -166,7 +166,7 @@ export const nist80053Controls: Control[] = [
       'Enable adaptive MFA for privileged and remote access',
       'Audit and remove non-unique service account usage',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -196,7 +196,7 @@ export const nist80053Controls: Control[] = [
       'Run annual response exercises with executive participation',
       'Track remediation of root causes identified in postmortems',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -226,7 +226,7 @@ export const nist80053Controls: Control[] = [
       'Establish baseline network behavior and alert deviations',
       'Review boundary policy changes monthly',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -262,7 +262,7 @@ export const nist80053Controls: Control[] = [
       'Harden key custody controls for privileged operators',
       'Alert on weak or deprecated crypto algorithm usage',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -292,7 +292,7 @@ export const nist80053Controls: Control[] = [
       'Define detection engineering review cycle every sprint',
       'Track detection efficacy with true positive rate metrics',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -328,7 +328,7 @@ export const nist80053Controls: Control[] = [
       'Automate drift detection and exception approvals',
       'Review baseline changes through CAB with security sign-off',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -364,7 +364,7 @@ export const nist80053Controls: Control[] = [
       'Alert and investigate unauthorized high-risk configuration changes',
       'Review configuration exceptions and compensating controls monthly',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
   {
@@ -400,7 +400,7 @@ export const nist80053Controls: Control[] = [
       'Integrate patch workflows with vulnerability findings',
       'Provide weekly unresolved critical vulnerability reporting',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-53/rev-5/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final',
     inItScope: true,
   },
 ];

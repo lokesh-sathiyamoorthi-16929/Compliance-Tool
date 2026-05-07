@@ -68,8 +68,11 @@ function ProductCard({
           <div className="bg-green-50 border border-green-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="w-5 h-5 text-green-600" />
-              <span className="font-semibold text-green-800">Connected Successfully</span>
+              <span className="font-semibold text-green-800">Connected to {name}</span>
             </div>
+            <p className="text-sm text-green-700 mb-2">
+              ComplianceIQ is now monitoring control evidence streams from {name}. Compliance scores will update as your environment data flows in.
+            </p>
             <div className="text-sm text-green-700 space-y-1">
               <p><strong>Server:</strong> {conn.serverUrl}</p>
               <p><strong>Last sync:</strong> {conn.lastSync}</p>
