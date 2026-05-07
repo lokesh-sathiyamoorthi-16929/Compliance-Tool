@@ -102,11 +102,23 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <button onClick={handleExecutiveExport} className="btn-secondary text-sm" disabled={exportingReport !== null}>
+          <button
+            onClick={handleExecutiveExport}
+            className="btn-secondary text-sm"
+            disabled={exportingReport !== null}
+            aria-label="Export executive PDF report"
+            aria-busy={exportingReport === 'executive'}
+          >
             {exportingReport === 'executive' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Export Executive PDF
           </button>
-          <button onClick={handleAuditorExport} className="btn-secondary text-sm" disabled={exportingReport !== null}>
+          <button
+            onClick={handleAuditorExport}
+            className="btn-secondary text-sm"
+            disabled={exportingReport !== null}
+            aria-label="Export auditor compliance report"
+            aria-busy={exportingReport === 'auditor'}
+          >
             {exportingReport === 'auditor' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             Export Auditor Report
           </button>

@@ -109,7 +109,7 @@ export const buildOverlapNarratives = (frameworks: Framework[]) => {
       const bThemes = themeScore(b.controls);
       const aligned = Math.min(aThemes, bThemes);
       narratives.push(
-        `${aligned} controls in ${a.framework.name} align with ${b.framework.name} via shared technical requirement themes.`
+        `Theme alignment score ${aligned}: ${a.framework.name} and ${b.framework.name} overlap across shared technical requirement themes.`
       );
     }
   }
