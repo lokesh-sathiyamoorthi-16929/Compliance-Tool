@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, CheckCircle, AlertTriangle, Shield } from 'lucide-react';
 import { Framework } from '../types';
+import ValidationBadge from './ValidationBadge';
 
 interface Props {
   framework: Framework;
@@ -24,7 +25,10 @@ export default function FrameworkCard({ framework, isMandatory }: Props) {
               </span>
             )}
           </div>
-          <h3 className="font-bold text-slate-900 text-lg leading-tight">{framework.name}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-slate-900 text-lg leading-tight">{framework.name}</h3>
+            <ValidationBadge framework={framework} />
+          </div>
           <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{framework.description}</p>
         </div>
         <div

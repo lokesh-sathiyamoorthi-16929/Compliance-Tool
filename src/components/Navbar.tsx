@@ -18,11 +18,14 @@ const navItems = [
   { label: 'Compare', path: '/compare', icon: Scale },
 ];
 
-export default function Navbar() {
+interface Props {
+  topOffsetClass?: string;
+}
+
+export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+    <nav className={`sticky ${topOffsetClass} z-50 bg-white border-b border-slate-200 shadow-sm`}>
       <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 group">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-sm group-hover:bg-blue-700 transition-colors">
             <Shield className="w-5 h-5 text-white" />
@@ -33,7 +36,6 @@ export default function Navbar() {
           </div>
         </Link>
 
-        {/* Nav links */}
         <div className="flex items-center gap-1 flex-wrap justify-end">
           {navItems.map(({ label, path, icon: Icon, end }) => (
             <NavLink
