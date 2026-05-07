@@ -1,5 +1,5 @@
 export interface EvidenceSource {
-  type: 'standard' | 'product' | 'methodology' | 'verification';
+  type: 'standard' | 'product' | 'methodology' | 'verification' | 'infographic';
   title: string;
   description: string;
   url?: string;
@@ -130,6 +130,13 @@ export const frameworkEvidence: Record<string, EvidenceSource[]> = {
       title: 'ManageEngine HIPAA Compliance',
       description: 'ManageEngine HIPAA compliance reference page.',
       url: 'https://www.manageengine.com/hipaa-compliance.html',
+      confidence: 'verified',
+    },
+    {
+      type: 'infographic',
+      title: 'ManageEngine HIPAA Compliance Infographic (PDF)',
+      description: 'Official ManageEngine infographic mapping products to HIPAA controls. Authoritative reference material for prospects and auditors.',
+      url: 'https://download.manageengine.com/images/hipaa-compliance-infographic.pdf?HIPAACompliance',
       confidence: 'verified',
     },
   ],
