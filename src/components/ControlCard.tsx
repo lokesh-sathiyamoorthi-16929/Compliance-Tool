@@ -175,6 +175,34 @@ export default function ControlCard({ control }: Props) {
               Official Reference
             </a>
           )}
+
+          {control.sourceMetadata && (
+            <div>
+              <h5 className="text-sm font-semibold text-slate-700 mb-2">Sources</h5>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href={control.sourceMetadata.standardSourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                  Standard source
+                </a>
+                {control.sourceMetadata.meComplianceBriefUrl && (
+                  <a
+                    href={control.sourceMetadata.meComplianceBriefUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    ManageEngine brief
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

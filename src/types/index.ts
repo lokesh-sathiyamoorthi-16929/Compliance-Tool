@@ -19,6 +19,14 @@ export interface Control {
   manageEngineProducts: MEProductMapping[];
   remediationSuggestions: string[];
   referenceUrl?: string;
+  sourceMetadata?: {
+    standardSourceUrl: string;
+    meComplianceBriefUrl?: string;
+    confidence: 'verified' | 'interpreted' | 'reference';
+    lastReviewed: string;
+    reviewedBy: string;
+    notes?: string;
+  };
   inItScope: boolean;
 }
 
@@ -34,6 +42,9 @@ export interface Framework {
   color: string;
   iconName: string;
   mandatory?: boolean;
+  confidenceLevel: 'high' | 'medium' | 'low';
+  validationStatus: 'sme_validated' | 'interpreted' | 'auto_generated';
+  lastValidated?: string;
 }
 
 export interface MEProduct {

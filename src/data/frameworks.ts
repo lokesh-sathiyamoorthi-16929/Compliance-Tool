@@ -12,6 +12,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 87,
     color: '#e11d48',
     iconName: 'Heart',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'pcidss',
@@ -24,6 +27,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 82,
     color: '#0891b2',
     iconName: 'CreditCard',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'soc2',
@@ -36,6 +42,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 79,
     color: '#7c3aed',
     iconName: 'Shield',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'nistcsf',
@@ -48,6 +57,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 85,
     color: '#0284c7',
     iconName: 'BookOpen',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'iso27001',
@@ -60,6 +72,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 81,
     color: '#059669',
     iconName: 'Globe',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'gdpr',
@@ -72,6 +87,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 74,
     color: '#2563eb',
     iconName: 'Lock',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'ccpa',
@@ -84,6 +102,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 68,
     color: '#f59e0b',
     iconName: 'UserCheck',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'sox',
@@ -96,6 +117,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 83,
     color: '#64748b',
     iconName: 'Building',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'nist800171',
@@ -108,6 +132,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 82,
     color: '#475569',
     iconName: 'Flag',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'cmmc',
@@ -120,6 +147,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 82,
     color: '#1e40af',
     iconName: 'Award',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'nist80053',
@@ -132,6 +162,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 84,
     color: '#0f766e',
     iconName: 'BookKey',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'cjis',
@@ -144,6 +177,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 83,
     color: '#b91c1c',
     iconName: 'Fingerprint',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'fedramp',
@@ -156,6 +192,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 84,
     color: '#1d4ed8',
     iconName: 'CloudCog',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'ferpa',
@@ -168,6 +207,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 72,
     color: '#0d9488',
     iconName: 'GraduationCap',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
   {
     id: 'glba',
@@ -180,6 +222,9 @@ export const frameworks: Framework[] = [
     meCoveragePercent: 78,
     color: '#b45309',
     iconName: 'Landmark',
+    confidenceLevel: 'medium',
+    validationStatus: 'interpreted',
+    lastValidated: '2026-05-07',
   },
 ];
 
