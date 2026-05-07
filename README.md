@@ -5,7 +5,7 @@
 
 **ComplianceIQ** is a web-based Compliance Posture Management platform that helps organizations discover which IT compliance frameworks apply to them, map controls to ManageEngine products, and continuously score their compliance posture.
 
-> **Demo Mode:** This MVP uses mock data only. No backend, no real API calls.
+> **Demo Mode:** Runs with mock data and no backend required (this is how the public GitHub Pages deploy runs).
 
 ---
 
@@ -81,6 +81,47 @@ npm run preview
 ```
 
 The development server starts at `http://localhost:5173/Compliance-Tool/`
+
+---
+
+## 🔌 Running with the Backend
+
+Frontend: this repo (`Compliance-Tool`)  
+Backend: [`lokesh-sathiyamoorthi-16929/Compliance-Tool-API`](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API)
+
+PowerShell quickstart:
+
+```powershell
+# Terminal 1 - backend API
+git clone https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API.git
+cd Compliance-Tool-API
+docker-compose up -d
+npm install
+npm run dev
+
+# Terminal 2 - frontend
+cd ..\Compliance-Tool
+copy .env.example .env
+npm install
+npm run dev
+```
+
+The frontend reads `VITE_API_BASE_URL` (default example: `http://localhost:3001`) and will require login before protected pages.
+
+---
+
+## 🧭 Demo Mode vs. Connected Mode
+
+ComplianceIQ now supports two runtime modes:
+
+- **Demo Mode** (default): enabled when `VITE_API_BASE_URL` is unset or `VITE_DEMO_MODE=true`  
+  - No backend calls
+  - No auth gate
+  - Public GitHub Pages deployment uses this mode
+- **Connected Mode**: enabled when `VITE_API_BASE_URL` is set and `VITE_DEMO_MODE` is not `true`  
+  - Real backend auth (`/auth/login`, `/auth/register`, `/me`, refresh tokens)
+  - Protected routes require sign-in
+  - Connection indicator shows backend health in the beta banner
 
 ---
 

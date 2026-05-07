@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FlaskConical, X } from 'lucide-react';
+import ConnectionIndicator from './ConnectionIndicator';
 
 const STORAGE_KEY = 'complianceiq-beta-banner-dismissed-at';
 const DISMISS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -36,6 +37,7 @@ export default function BetaBanner({ onVisibilityChange }: Props) {
           BETA — ComplianceIQ is in evaluation preview. Data is interpretive and not SME-validated.
           See evidence &amp; disclaimer for details.
         </p>
+        <ConnectionIndicator />
         <button
           type="button"
           onClick={dismissBanner}
