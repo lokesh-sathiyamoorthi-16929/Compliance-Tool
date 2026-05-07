@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import {
   Shield,
@@ -7,7 +8,11 @@ import {
   Wand2,
   Home,
   Scale,
+  LogOut,
+  ChevronDown,
 } from 'lucide-react';
+import { isDemoMode } from '../config/env';
+import { useAuthStore } from '../store/useAuthStore';
 
 const navItems = [
   { label: 'Home', path: '/', icon: Home, end: true },
@@ -23,6 +28,41 @@ interface Props {
 }
 
 export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
+  const demoMode = isDemoMode();
+  const { user, status, logout } = useAuthStore((state) => ({
+    user: state.user,
+    status: state.status,
+    logout: state.logout,
+  }));
+  const isAuthenticated = status === 'authenticated';
+  const visibleNavItems = demoMode || isAuthenticated ? navItems : [navItems[0]];
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const onClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', onClickOutside);
+    };
+  }, []);
+
+  const initials = (user?.fullName || user?.email || 'U')
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('')
+    .slice(0, 2);
+
+  const onLogout = async () => {
+    setMenuOpen(false);
+    await logout();
+  };
+
   return (
     <nav className={`sticky ${topOffsetClass} z-50 bg-white border-b border-slate-200 shadow-sm`}>
       <div className="max-w-7xl mx-auto px-4 lg:px-8 h-16 flex items-center justify-between gap-4">
@@ -37,7 +77,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
         </Link>
 
         <div className="flex items-center gap-1 flex-wrap justify-end">
-          {navItems.map(({ label, path, icon: Icon, end }) => (
+          {visibleNavItems.map(({ label, path, icon: Icon, end }) => (
             <NavLink
               key={path}
               to={path}
@@ -54,6 +94,47 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
               <span className="hidden sm:inline">{label}</span>
             </NavLink>
           ))}
+
+          {!demoMode && !isAuthenticated ? (
+            <Link
+              to="/login"
+              className="ml-1 rounded-full bg-blue-600 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              Sign in
+            </Link>
+          ) : null}
+
+          {!demoMode && isAuthenticated && user ? (
+            <div className="relative ml-1" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen((open) => !open)}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-200 text-slate-700 font-semibold">
+                  {initials}
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+
+              {menuOpen ? (
+                <div className="absolute right-0 mt-2 w-64 rounded-lg border border-slate-200 bg-white py-2 shadow-lg">
+                  <div className="border-b border-slate-100 px-3 pb-2">
+                    <p className="text-sm font-semibold text-slate-900">{user.fullName}</p>
+                    <p className="text-xs text-slate-500">{user.email}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="mt-1 flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </nav>
