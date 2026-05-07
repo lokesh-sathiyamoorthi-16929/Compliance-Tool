@@ -1,3 +1,266 @@
-# Compliance-Tool
+# ComplianceIQ — Compliance Posture Management Platform
 
-ComplianceIQ — Compliance Posture Management web app (MVP coming soon).
+[![Deploy to GitHub Pages](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool/actions/workflows/deploy.yml/badge.svg)](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool/actions/workflows/deploy.yml)
+
+**ComplianceIQ** is a web-based Compliance Posture Management platform that helps organizations discover which IT compliance frameworks apply to them, map controls to ManageEngine products, and continuously score their compliance posture.
+
+> **Demo Mode:** This MVP uses mock data only. No backend, no real API calls.
+
+---
+
+## 📸 Screenshots
+
+| Landing Page | Wizard | Dashboard |
+|---|---|---|
+| _Hero, features, CTA_ | _8-step applicability wizard_ | _Score gauge, charts, remediation_ |
+
+> Screenshots will be added after first deployment.
+
+---
+
+## 🎯 Three Core Modules
+
+| Module | Description |
+|--------|-------------|
+| 🧭 **Discover** | Multi-step wizard maps your business profile (industry, data types, geography) to applicable compliance frameworks |
+| 🗺️ **Map** | Browse controls for each framework — each control mapped to specific ManageEngine products with coverage percentages |
+| 📊 **Score** | Real-time compliance score dashboard with maturity tiers, trend charts, and prioritized remediation roadmap |
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| React 18 + TypeScript | UI framework |
+| Vite | Build tool |
+| Tailwind CSS | Styling |
+| React Router v6 | Client-side routing |
+| Recharts | Charts and graphs |
+| lucide-react | Icons |
+| Zustand | State management |
+
+---
+
+## 🚀 Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool.git
+cd Compliance-Tool
+
+# 2. Install dependencies
+npm install
+
+# 3. Start development server
+npm run dev
+
+# 4. Build for production
+npm run build
+
+# 5. Preview production build
+npm run preview
+```
+
+The development server starts at `http://localhost:5173/Compliance-Tool/`
+
+---
+
+## 📂 Project Structure
+
+```
+Compliance-Tool/
+├── .github/workflows/deploy.yml     # GitHub Pages deployment
+├── public/favicon.svg               # Shield icon
+├── src/
+│   ├── main.tsx                     # React entry point
+│   ├── App.tsx                      # Router + routes
+│   ├── index.css                    # Tailwind directives + utilities
+│   ├── components/
+│   │   ├── Layout.tsx               # Top nav + sidebar + content area
+│   │   ├── Navbar.tsx               # Top navigation bar
+│   │   ├── Sidebar.tsx              # Left sidebar navigation
+│   │   ├── ScoreGauge.tsx           # SVG half-circle compliance score gauge
+│   │   ├── MaturityBadge.tsx        # Color-coded maturity tier badge
+│   │   ├── ControlCard.tsx          # Expandable control card with ME mapping
+│   │   ├── FrameworkCard.tsx        # Framework summary card
+│   │   ├── RemediationItem.tsx      # Prioritized remediation action card
+│   │   ├── WizardStep.tsx           # Reusable wizard step wrapper with progress bar
+│   │   └── Disclaimer.tsx           # Legal disclaimer footer banner
+│   ├── pages/
+│   │   ├── LandingPage.tsx          # Hero, features, statistics, CTA
+│   │   ├── WizardPage.tsx           # 8-step applicability wizard
+│   │   ├── FrameworksPage.tsx       # Mandatory + recommended frameworks
+│   │   ├── FrameworkDetailPage.tsx  # Control catalog with filters
+│   │   ├── ConnectionsPage.tsx      # Mock Log360 + AD360 connection UI
+│   │   ├── DashboardPage.tsx        # Score gauge, charts, remediation
+│   │   └── NotFoundPage.tsx         # 404 page
+│   ├── data/
+│   │   ├── frameworks.ts            # 12 framework metadata records
+│   │   ├── manageEngineProducts.ts  # 10 ME product catalog entries
+│   │   ├── industries.ts            # 9 industry options for wizard
+│   │   ├── usStates.ts              # All 50 US states + DC
+│   │   ├── mockScoreData.ts         # Mock compliance scores for HIPAA + PCI DSS
+│   │   └── controls/
+│   │       ├── hipaa.ts             # 15 HIPAA controls — fully mapped
+│   │       ├── pcidss.ts            # 16 PCI DSS v4.0.1 controls — fully mapped
+│   │       ├── soc2.ts              # 10 SOC 2 Type II controls
+│   │       ├── nistcsf.ts           # 10 NIST CSF 2.0 controls
+│   │       └── iso27001.ts          # 10 ISO 27001:2022 controls
+│   ├── store/
+│   │   └── useAppStore.ts           # Zustand store (wizard, connections, framework)
+│   ├── types/
+│   │   └── index.ts                 # TypeScript interfaces and types
+│   └── utils/
+│       ├── applicabilityEngine.ts   # Wizard answers → applicable frameworks
+│       └── scoringEngine.ts         # Weighted scoring + maturity tier logic
+```
+
+---
+
+## 🧩 Key Concepts
+
+### Applicability Engine
+
+The `applicabilityEngine.ts` maps wizard answers to frameworks using rule-based logic:
+
+| Rule | Framework |
+|------|-----------|
+| Industry = Healthcare AND data includes PHI | **HIPAA** (Mandatory) |
+| Data includes Payment Card Data | **PCI DSS** (Mandatory) |
+| State = CA or customers include CA residents | **CCPA/CPRA** (Mandatory) |
+| Customers include EU | **GDPR** (Mandatory) |
+| Publicly traded = Yes | **SOX ITGCs** (Mandatory) |
+| Industry = Education | **FERPA** (Mandatory) |
+| Industry = Government Contractor or CUI data | **NIST 800-171 + CMMC** (Mandatory) |
+| Industry = Financial | **GLBA** (Mandatory) |
+| Always | **SOC 2, NIST CSF, ISO 27001** (Recommended) |
+
+### Control Catalog
+
+Each control follows a structured interface:
+
+```typescript
+interface Control {
+  id: string;                   // e.g., "HIPAA-164.312(b)"
+  frameworkId: string;
+  family: string;               // e.g., "Technical Safeguards"
+  title: string;
+  description: string;
+  category: 'Technical' | 'Administrative' | 'Physical' | 'Organizational';
+  required: boolean;
+  addressable?: boolean;
+  weight: 1 | 2 | 3 | 4 | 5;  // importance weighting
+  technicalRequirements: string[];
+  manageEngineProducts: {
+    productId: string;
+    coverage: number;           // 0-100%
+    features: string[];
+    primary: boolean;
+  }[];
+  remediationSuggestions: string[];
+  referenceUrl?: string;
+  inItScope: boolean;
+}
+```
+
+### Scoring Methodology
+
+```
+controlScore   = (passedChecks × weight) / (totalChecks × weight) × 100
+familyScore    = weighted average of control scores in the family
+frameworkScore = weighted average of family scores
+```
+
+### Maturity Tiers
+
+| Score | Tier | Label | Color |
+|-------|------|-------|-------|
+| 0–40 | Tier 1 | Initial | 🔴 Red |
+| 41–65 | Tier 2 | Developing | 🟠 Orange |
+| 66–80 | Tier 3 | Defined | 🟡 Yellow |
+| 81–94 | Tier 4 | Managed | 🟢 Green |
+| 95–100 | Tier 5 | Optimized | 🔵 Blue |
+
+---
+
+## 📊 ManageEngine Products Mapped
+
+| Product | Category | Primary Use Cases |
+|---------|----------|-------------------|
+| **Log360** | SIEM & Log Management | Audit logs, threat detection, UEBA, HIPAA/PCI DSS reports |
+| **ADAudit Plus** | AD Auditing | AD change tracking, logon monitoring, privilege escalation |
+| **ADManager Plus** | AD Management | User provisioning, access certification, SoD |
+| **AD360** | IAM | MFA, SSO, identity governance, zero-trust |
+| **DataSecurity Plus** | Data Security & DLP | PII/PHI discovery, file server DLP, ransomware detection |
+| **Endpoint Central** | Endpoint Management | Patch management, MDM, configuration compliance |
+| **PAM360** | Privileged Access | Session recording, break-glass access, JIT provisioning |
+| **Password Manager Pro** | Secrets Management | Password vault, key rotation, certificate management |
+| **Patch Manager Plus** | Patch Management | Automated patching for OS + 850+ third-party apps |
+| **Vulnerability Manager Plus** | Vulnerability Management | CVE scanning, risk-based prioritization, remediation |
+
+---
+
+## 🗺️ Roadmap
+
+### ✅ MVP (Current)
+- 12 compliance frameworks with metadata
+- HIPAA (15 controls) and PCI DSS v4.0.1 (16 controls) fully mapped to ManageEngine products
+- SOC 2 Type II, NIST CSF 2.0, ISO 27001:2022 (10 controls each)
+- Applicability Wizard with 8 steps
+- Mock compliance score dashboard with charts
+- Simulated API connections for Log360 and AD360
+- GitHub Pages deployment
+
+### 🔜 Phase 2
+- Real Log360 and AD360 API integration
+- Live evidence collection from ManageEngine APIs
+- Backend service (Node.js/Python) with PostgreSQL/TimescaleDB
+- User authentication and multi-tenancy (MSP support)
+- Full control catalog for all 12 frameworks
+- Evidence-based automated scoring
+- PDF and auditor evidence package export
+- Continuous monitoring with scheduled assessments
+- Slack/Teams/email notifications for score changes
+
+---
+
+## 🌐 Deployment
+
+### GitHub Pages
+
+The included workflow (`.github/workflows/deploy.yml`) automatically deploys to GitHub Pages on push to `main`.
+
+**URL:** `https://lokesh-sathiyamoorthi-16929.github.io/Compliance-Tool/`
+
+### Vercel / Netlify
+
+```bash
+npm run build
+# Deploy the ./dist directory
+```
+
+Set the base URL in `vite.config.ts`:
+```typescript
+base: '/'  // Change from '/Compliance-Tool/' for Vercel/Netlify
+```
+
+---
+
+## ⚖️ Legal Disclaimer
+
+ComplianceIQ is a demonstration tool providing general compliance guidance based on publicly available regulatory frameworks and standards. **This is not legal advice.** Compliance determinations, particularly for regulated industries (healthcare, financial services, government contracting), should be reviewed by qualified legal counsel and certified compliance professionals (CISA, CRISC, CISSP, CPA).
+
+All compliance scores, assessments, and data shown in this MVP are based on mock data for demonstration purposes. No actual API connections or real compliance assessments are performed.
+
+ManageEngine is a registered trademark of ZOHO Corporation. This tool is an independent demonstration platform and is not officially affiliated with or endorsed by ZOHO Corporation or ManageEngine.
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](./LICENSE) for details.
+
+---
+
+*Built with ❤️ for the IT compliance community.*
