@@ -143,7 +143,7 @@ export default function ComparePage() {
 
           {/* Products covering all */}
           <div className="text-center p-4 bg-emerald-50 rounded-xl border border-emerald-100">
-            <div className="text-5xl font-extrabold text-emerald-600 mb-1">{productsCountCoveringAll || bundleProducts.length}</div>
+            <div className="text-5xl font-extrabold text-emerald-600 mb-1">{productsCountCoveringAll > 0 ? productsCountCoveringAll : bundleProducts.length}</div>
             <div className="font-semibold text-slate-700 text-sm mb-1">Products Cover All</div>
             <p className="text-xs text-slate-500">
               ManageEngine products satisfy the majority of controls across all selected frameworks

@@ -159,8 +159,10 @@ export const computeEffortReduction = (frameworks: Framework[]): { total: number
 /**
  * Bundle recommendation: greedy algorithm.
  * Pick the product that covers the most controls across all selected frameworks,
- * remove those controls from consideration, repeat until 5 products or >80% coverage.
+ * remove those controls from consideration, repeat until MAX_BUNDLE_SIZE products or >BUNDLE_COVERAGE_THRESHOLD coverage.
  */
+const MAX_BUNDLE_SIZE = 5;
+const BUNDLE_COVERAGE_THRESHOLD = 0.8;
 export const buildBundleRecommendation = (frameworks: Framework[]): Array<{
   productId: string;
   productName: string;
@@ -193,7 +195,7 @@ export const buildBundleRecommendation = (frameworks: Framework[]): Array<{
   const selected: ReturnType<typeof buildBundleRecommendation> = [];
   const totalKeys = allControlKeys.size;
 
-  for (let i = 0; i < 5 && remaining.size > 0; i++) {
+  for (let i = 0; i < MAX_BUNDLE_SIZE && remaining.size > 0; i++) {
     let bestProduct = '';
     let bestCount = 0;
 
@@ -228,8 +230,8 @@ export const buildBundleRecommendation = (frameworks: Framework[]): Array<{
     // Remove covered keys from remaining
     coveredKeys.forEach((k) => remaining.delete(k));
 
-    // Check if >80% covered
-    if ((totalKeys - remaining.size) / totalKeys >= 0.8) break;
+    // Check if coverage threshold reached
+    if ((totalKeys - remaining.size) / totalKeys >= BUNDLE_COVERAGE_THRESHOLD) break;
   }
 
   return selected;

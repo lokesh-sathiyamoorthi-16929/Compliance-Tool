@@ -105,7 +105,7 @@ export default function FrameworkDetailPage() {
 
   const visibleSpotlights = showAllProducts ? productSpotlights : productSpotlights.slice(0, 6);
 
-  const applyProductFilter = (productId: string) => {
+  const toggleProductFilter = (productId: string) => {
     setProductFilter(productId === productFilter ? 'all' : productId);
     controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -142,10 +142,10 @@ export default function FrameworkDetailPage() {
           <div
             key={spotlight.product.id}
             className={`relative rounded-lg border cursor-pointer transition-all duration-150 overflow-hidden ${isActive ? 'border-blue-300 bg-blue-50 shadow-sm' : 'border-slate-200 bg-white hover:border-blue-200 hover:shadow-sm'}`}
-            onClick={() => applyProductFilter(spotlight.product.id)}
+            onClick={() => toggleProductFilter(spotlight.product.id)}
             role="button"
             tabIndex={0}
-            onKeyDown={(e) => e.key === 'Enter' && applyProductFilter(spotlight.product.id)}
+            onKeyDown={(e) => e.key === 'Enter' && toggleProductFilter(spotlight.product.id)}
             aria-pressed={isActive}
           >
             {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-600 rounded-l-lg" />}
