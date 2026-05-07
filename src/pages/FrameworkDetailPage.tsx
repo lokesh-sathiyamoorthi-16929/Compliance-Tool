@@ -66,6 +66,9 @@ const FRAMEWORK_INFOGRAPHICS: Record<string, string> = {
   hipaa: 'https://download.manageengine.com/images/hipaa-compliance-infographic.pdf?HIPAACompliance',
 };
 
+const TOOLTIP_OFFSET_PX = 8;
+const TOOLTIP_WIDTH_PX = 264;
+
 export default function FrameworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const framework = getFrameworkById(id ?? '');
@@ -130,8 +133,14 @@ export default function FrameworkDetailPage() {
   };
 
   const handleRowEnter = (productId: string, e: React.MouseEvent<HTMLDivElement>) => {
-    if (leaveTimerRef.current) { window.clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
-    if (enterTimerRef.current) { window.clearTimeout(enterTimerRef.current); enterTimerRef.current = null; }
+    if (leaveTimerRef.current) {
+      window.clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    if (enterTimerRef.current) {
+      window.clearTimeout(enterTimerRef.current);
+      enterTimerRef.current = null;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     enterTimerRef.current = window.setTimeout(() => {
       setTooltipPos({ top: rect.top, left: rect.right });
@@ -140,7 +149,10 @@ export default function FrameworkDetailPage() {
   };
 
   const handleRowLeave = () => {
-    if (enterTimerRef.current) { window.clearTimeout(enterTimerRef.current); enterTimerRef.current = null; }
+    if (enterTimerRef.current) {
+      window.clearTimeout(enterTimerRef.current);
+      enterTimerRef.current = null;
+    }
     leaveTimerRef.current = window.setTimeout(() => {
       setHoveredProductId(null);
       setTooltipPos(null);
@@ -148,7 +160,10 @@ export default function FrameworkDetailPage() {
   };
 
   const handleTooltipEnter = () => {
-    if (leaveTimerRef.current) { window.clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
+    if (leaveTimerRef.current) {
+      window.clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
   };
 
   const activeProduct = productFilter !== 'all' ? getProductById(productFilter) : null;
@@ -171,7 +186,7 @@ export default function FrameworkDetailPage() {
                 <span className="text-sm font-semibold text-slate-700">Products</span>
               </div>
               <div className="relative group">
-                <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" aria-label="About this panel" role="img" />
                 <div className="absolute right-0 top-5 w-52 bg-slate-900 text-white text-xs rounded-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 leading-relaxed">
                   ManageEngine products that help cover this framework&apos;s controls. Click any product to filter the controls list.
                 </div>
@@ -194,7 +209,7 @@ export default function FrameworkDetailPage() {
                     <button
                       type="button"
                       onClick={() => toggleProductFilter(spotlight.product.id)}
-                      className={`relative w-full px-2.5 py-2 transition-colors text-left flex flex-col cursor-pointer ${
+                      className={`relative w-full px-2.5 py-2 transition-colors text-left flex flex-col ${
                         isActive ? 'bg-blue-50' : 'bg-slate-50 hover:bg-slate-100'
                       }`}
                     >
@@ -239,7 +254,7 @@ export default function FrameworkDetailPage() {
       {/* ── Fixed hover tooltip (desktop) ── */}
       {hoveredProductId && tooltipPos && tooltipSpotlight && (
         <div
-          style={{ position: 'fixed', top: tooltipPos.top, left: tooltipPos.left + 8, zIndex: 50, width: 264 }}
+          style={{ position: 'fixed', top: tooltipPos.top, left: tooltipPos.left + TOOLTIP_OFFSET_PX, zIndex: 50, width: TOOLTIP_WIDTH_PX }}
           className="bg-white border border-slate-200 rounded-xl shadow-lg p-4"
           onMouseEnter={handleTooltipEnter}
           onMouseLeave={handleRowLeave}
