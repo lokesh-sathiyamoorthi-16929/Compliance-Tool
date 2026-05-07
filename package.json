@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "postbuild": "node scripts/copy-404.cjs",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
@@ -15,6 +16,9 @@
     "react-router-dom": "^6.21.0",
     "recharts": "^2.10.3",
     "lucide-react": "^0.303.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "zustand": "^4.4.7"
   },
   "devDependencies": {

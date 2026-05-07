@@ -1,10 +1,28 @@
 # ComplianceIQ — Compliance Posture Management Platform
 
 [![Deploy to GitHub Pages](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool/actions/workflows/deploy.yml/badge.svg)](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool/actions/workflows/deploy.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-ComplianceIQ-2563eb?style=for-the-badge)](https://lokesh-sathiyamoorthi-16929.github.io/Compliance-Tool/)
 
 **ComplianceIQ** is a web-based Compliance Posture Management platform that helps organizations discover which IT compliance frameworks apply to them, map controls to ManageEngine products, and continuously score their compliance posture.
 
 > **Demo Mode:** This MVP uses mock data only. No backend, no real API calls.
+
+---
+
+## 🔗 Live Demo
+
+https://lokesh-sathiyamoorthi-16929.github.io/Compliance-Tool/
+
+---
+
+## ✨ What's New in V2
+
+- Top-nav-only polished UI (sidebar removed)
+- Framework detail product spotlight cards with one-click filtering
+- New U.S. government frameworks: CMMC 2.0, NIST 800-171, NIST 800-53 Rev 5, CJIS v5.9, FedRAMP Moderate
+- New **Compare Frameworks** page with overlap and shared product analysis
+- Real PDF exports (Executive PDF + Auditor Report)
+- GitHub Pages deployment hardening (production base path + SPA 404 fallback)
 
 ---
 
@@ -77,13 +95,13 @@ Compliance-Tool/
 │   ├── App.tsx                      # Router + routes
 │   ├── index.css                    # Tailwind directives + utilities
 │   ├── components/
-│   │   ├── Layout.tsx               # Top nav + sidebar + content area
+│   │   ├── Layout.tsx               # Top nav + full-width content container
 │   │   ├── Navbar.tsx               # Top navigation bar
-│   │   ├── Sidebar.tsx              # Left sidebar navigation
 │   │   ├── ScoreGauge.tsx           # SVG half-circle compliance score gauge
 │   │   ├── MaturityBadge.tsx        # Color-coded maturity tier badge
 │   │   ├── ControlCard.tsx          # Expandable control card with ME mapping
 │   │   ├── FrameworkCard.tsx        # Framework summary card
+│   │   ├── MEProductSpotlightCard.tsx # Framework detail product spotlight card
 │   │   ├── RemediationItem.tsx      # Prioritized remediation action card
 │   │   ├── WizardStep.tsx           # Reusable wizard step wrapper with progress bar
 │   │   └── Disclaimer.tsx           # Legal disclaimer footer banner
@@ -94,11 +112,12 @@ Compliance-Tool/
 │   │   ├── FrameworkDetailPage.tsx  # Control catalog with filters
 │   │   ├── ConnectionsPage.tsx      # Mock Log360 + AD360 connection UI
 │   │   ├── DashboardPage.tsx        # Score gauge, charts, remediation
+│   │   ├── ComparePage.tsx          # Cross-framework comparison workspace
 │   │   └── NotFoundPage.tsx         # 404 page
 │   ├── data/
-│   │   ├── frameworks.ts            # 12 framework metadata records
+│   │   ├── frameworks.ts            # 15 framework metadata records
 │   │   ├── manageEngineProducts.ts  # 10 ME product catalog entries
-│   │   ├── industries.ts            # 9 industry options for wizard
+│   │   ├── industries.ts            # 10 industry options for wizard
 │   │   ├── usStates.ts              # All 50 US states + DC
 │   │   ├── mockScoreData.ts         # Mock compliance scores for HIPAA + PCI DSS
 │   │   └── controls/
@@ -106,15 +125,34 @@ Compliance-Tool/
 │   │       ├── pcidss.ts            # 16 PCI DSS v4.0.1 controls — fully mapped
 │   │       ├── soc2.ts              # 10 SOC 2 Type II controls
 │   │       ├── nistcsf.ts           # 10 NIST CSF 2.0 controls
-│   │       └── iso27001.ts          # 10 ISO 27001:2022 controls
+│   │       ├── iso27001.ts          # 10 ISO 27001:2022 controls
+│   │       ├── cmmc.ts              # 12 CMMC 2.0 representative practices
+│   │       ├── nist800171.ts        # 10 NIST 800-171 controls
+│   │       ├── nist80053.ts         # 12 NIST 800-53 Rev 5 controls
+│   │       ├── cjis.ts              # 10 CJIS v5.9 controls
+│   │       └── fedramp.ts           # 10 FedRAMP Moderate controls
 │   ├── store/
 │   │   └── useAppStore.ts           # Zustand store (wizard, connections, framework)
 │   ├── types/
 │   │   └── index.ts                 # TypeScript interfaces and types
 │   └── utils/
 │       ├── applicabilityEngine.ts   # Wizard answers → applicable frameworks
+│       ├── comparisonEngine.ts      # Cross-framework overlap and bundle logic
+│       ├── pdfExport.ts             # Executive and auditor PDF generation
 │       └── scoringEngine.ts         # Weighted scoring + maturity tier logic
 ```
+
+---
+
+## 🔍 Compare Frameworks
+
+The `/compare` page lets teams pick 2–4 frameworks and analyze:
+
+- Side-by-side framework metrics (controls, ME coverage, top products)
+- Theme overlap matrix (audit, access, encryption, incident response, etc.)
+- Shared ManageEngine product leverage across selected frameworks
+
+This helps identify bundle candidates that maximize compliance coverage.
 
 ---
 
@@ -203,23 +241,24 @@ frameworkScore = weighted average of family scores
 
 ## 🗺️ Roadmap
 
-### ✅ MVP (Current)
-- 12 compliance frameworks with metadata
+### ✅ MVP + V2 (Current)
+- 15 compliance frameworks with metadata
 - HIPAA (15 controls) and PCI DSS v4.0.1 (16 controls) fully mapped to ManageEngine products
 - SOC 2 Type II, NIST CSF 2.0, ISO 27001:2022 (10 controls each)
+- CMMC 2.0, NIST 800-171, NIST 800-53 Rev 5, CJIS, and FedRAMP control catalogs
 - Applicability Wizard with 8 steps
 - Mock compliance score dashboard with charts
+- Compare Frameworks page
+- Executive and auditor PDF exports
 - Simulated API connections for Log360 and AD360
-- GitHub Pages deployment
+- GitHub Pages deployment with SPA routing fallback
 
-### 🔜 Phase 2
+### 🔜 Phase 2B
 - Real Log360 and AD360 API integration
 - Live evidence collection from ManageEngine APIs
 - Backend service (Node.js/Python) with PostgreSQL/TimescaleDB
 - User authentication and multi-tenancy (MSP support)
-- Full control catalog for all 12 frameworks
 - Evidence-based automated scoring
-- PDF and auditor evidence package export
 - Continuous monitoring with scheduled assessments
 - Slack/Teams/email notifications for score changes
 

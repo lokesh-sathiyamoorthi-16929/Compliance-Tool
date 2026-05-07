@@ -43,6 +43,12 @@ export const industries: IndustryOption[] = [
     icon: '🏛️',
   },
   {
+    id: 'law_enforcement',
+    label: 'Law Enforcement',
+    description: 'Police departments, sheriff offices, fusion centers, and agencies handling CJI',
+    icon: '🚔',
+  },
+  {
     id: 'energy',
     label: 'Energy / Utilities',
     description: 'Electric utilities, oil & gas, water systems, and critical infrastructure',

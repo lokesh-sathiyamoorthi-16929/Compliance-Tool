@@ -54,6 +54,7 @@ export type Industry =
   | 'technology'
   | 'education'
   | 'government'
+  | 'law_enforcement'
   | 'energy'
   | 'manufacturing'
   | 'other';

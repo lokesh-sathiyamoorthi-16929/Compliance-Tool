@@ -155,7 +155,7 @@ export default function ConnectionsPage() {
   const anyConnected = connections.log360.connected || connections.ad360.connected;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Product Connections</h1>
         <p className="text-slate-500 mt-1">
