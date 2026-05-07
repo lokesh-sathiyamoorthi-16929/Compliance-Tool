@@ -16,6 +16,7 @@ import {
   Package2,
   X,
   ExternalLink,
+  FileDown,
 } from 'lucide-react';
 import { getFrameworkById } from '../data/frameworks';
 import { getControlsByFrameworkId } from '../data/controls';
@@ -61,6 +62,10 @@ const FRAMEWORK_INSIGHT: Record<string, string> = {
   glba: 'GLBA applies because you are a financial institution. The Safeguards Rule requires an information security program protecting customer financial data.',
 };
 
+const FRAMEWORK_INFOGRAPHICS: Record<string, string> = {
+  hipaa: 'https://download.manageengine.com/images/hipaa-compliance-infographic.pdf?HIPAACompliance',
+};
+
 export default function FrameworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const framework = getFrameworkById(id ?? '');
@@ -69,8 +74,10 @@ export default function FrameworkDetailPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [scopeFilter, setScopeFilter] = useState<string>('all');
   const [productFilter, setProductFilter] = useState<string>('all');
-  const [hoveredProduct, setHoveredProduct] = useState<string | null>(null);
-  const hoverTimeoutRef = useRef<number | null>(null);
+  const [hoveredProductId, setHoveredProductId] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
+  const enterTimerRef = useRef<number | null>(null);
+  const leaveTimerRef = useRef<number | null>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
 
   if (!framework) return <NotFoundPage />;
@@ -119,115 +126,145 @@ export default function FrameworkDetailPage() {
 
   const toggleProductFilter = (productId: string) => {
     setProductFilter(productId === productFilter ? 'all' : productId);
-    setHoveredProduct(productId);
-    controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => controlsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
-  const onItemEnter = (productId: string) => {
-    if (hoverTimeoutRef.current) {
-      window.clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-    setHoveredProduct(productId);
+  const handleRowEnter = (productId: string, e: React.MouseEvent<HTMLDivElement>) => {
+    if (leaveTimerRef.current) { window.clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
+    if (enterTimerRef.current) { window.clearTimeout(enterTimerRef.current); enterTimerRef.current = null; }
+    const rect = e.currentTarget.getBoundingClientRect();
+    enterTimerRef.current = window.setTimeout(() => {
+      setTooltipPos({ top: rect.top, left: rect.right });
+      setHoveredProductId(productId);
+    }, 150);
   };
 
-  const onItemLeave = () => {
-    hoverTimeoutRef.current = window.setTimeout(() => {
-      setHoveredProduct(null);
+  const handleRowLeave = () => {
+    if (enterTimerRef.current) { window.clearTimeout(enterTimerRef.current); enterTimerRef.current = null; }
+    leaveTimerRef.current = window.setTimeout(() => {
+      setHoveredProductId(null);
+      setTooltipPos(null);
     }, 200);
+  };
+
+  const handleTooltipEnter = () => {
+    if (leaveTimerRef.current) { window.clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
   };
 
   const activeProduct = productFilter !== 'all' ? getProductById(productFilter) : null;
   const frameworkInsight = FRAMEWORK_INSIGHT[id ?? ''] ?? null;
+  const infographicUrl = FRAMEWORK_INFOGRAPHICS[id ?? ''] ?? null;
+
+  const tooltipSpotlight = hoveredProductId ? productSpotlights.find((s) => s.product.id === hoveredProductId) : null;
 
   return (
     <div className="lg:flex lg:gap-0 -mx-4 lg:-mx-8">
+      {/* ── Desktop product rail ── */}
       {productSpotlights.length > 0 && (
-        <aside className="hidden lg:block w-[72px] shrink-0 border-r border-slate-200 bg-slate-50">
-          <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto flex flex-col items-center py-2">
-            <div className="relative group mb-2">
-              <div className="w-14 h-10 rounded-lg flex items-center justify-center text-slate-600">
-                <ShoppingCart className="w-4 h-4" />
+        <aside className="hidden lg:block w-[152px] shrink-0 border-r border-slate-200 bg-slate-50">
+          <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-clean flex flex-col py-2">
+
+            {/* Rail header */}
+            <div className="flex items-center justify-between px-3 pb-2 mb-0.5 border-b border-slate-100">
+              <div className="flex items-center gap-1.5">
+                <ShoppingCart className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-semibold text-slate-700">Products</span>
               </div>
-              <div className="absolute left-16 top-0 w-64 bg-slate-900 text-white text-xs rounded-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20">
-                ManageEngine Products covering this framework — click to filter
+              <div className="relative group">
+                <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                <div className="absolute right-0 top-5 w-52 bg-slate-900 text-white text-xs rounded-lg p-2 opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-20 leading-relaxed">
+                  ManageEngine products that help cover this framework&apos;s controls. Click any product to filter the controls list.
+                </div>
               </div>
             </div>
 
-            <div className="space-y-1.5 pb-2">
+            {/* Product rows */}
+            <div className="flex flex-col">
               {productSpotlights.map((spotlight) => {
                 const ProductIcon = PRODUCT_ICONS[spotlight.product.id] ?? Package2;
                 const isActive = productFilter === spotlight.product.id;
-                const isHovered = hoveredProduct === spotlight.product.id;
 
                 return (
                   <div
                     key={spotlight.product.id}
-                    className="relative"
-                    onMouseEnter={() => onItemEnter(spotlight.product.id)}
-                    onMouseLeave={onItemLeave}
-                    onFocus={() => onItemEnter(spotlight.product.id)}
-                    onBlur={onItemLeave}
+                    className="border-b border-slate-100 last:border-0"
+                    onMouseEnter={(e) => handleRowEnter(spotlight.product.id, e)}
+                    onMouseLeave={handleRowLeave}
                   >
                     <button
                       type="button"
                       onClick={() => toggleProductFilter(spotlight.product.id)}
-                      className={`relative w-14 h-[62px] rounded-lg border-r border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-start pt-1.5 ${isActive ? 'bg-blue-50' : ''}`}
+                      className={`relative w-full px-2.5 py-2 transition-colors text-left flex flex-col cursor-pointer ${
+                        isActive ? 'bg-blue-50' : 'bg-slate-50 hover:bg-slate-100'
+                      }`}
                     >
-                      {isActive && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600 rounded-l-lg" />}
-                      <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${BUNDLE_DOT[spotlight.bundle]}`} />
-                      <ProductIcon className={`w-7 h-7 ${isActive ? 'text-blue-700' : 'text-slate-700'}`} />
-                      <span className="text-[10px] font-semibold text-slate-600 mt-1">
-                        {spotlight.coveredControls}/{spotlight.totalControls}
-                      </span>
-                      <span className="absolute bottom-0 left-0 h-[3px] bg-blue-500 rounded-b-lg" style={{ width: `${Math.max(6, spotlight.averageCoverage)}%` }} />
-                    </button>
-
-                    {isHovered && (
-                      <div
-                        className="absolute left-16 top-0 w-[280px] bg-white border border-slate-200 rounded-xl shadow-lg p-3 z-30"
-                        onMouseEnter={() => onItemEnter(spotlight.product.id)}
-                        onMouseLeave={onItemLeave}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-slate-900 text-sm">{spotlight.product.name}</p>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white ${BUNDLE_DOT[spotlight.bundle]}`}>
-                            {spotlight.bundle}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-1">
-                          Covers {spotlight.coveredControls} / {spotlight.totalControls} controls
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1 line-clamp-1">{spotlight.product.description}</p>
-                        <p className="text-xs text-blue-600 font-semibold mt-2">Click to filter →</p>
-                        <a
-                          href={spotlight.product.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold mt-1"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          Open product page <ExternalLink className="w-3 h-3" />
-                        </a>
+                      {isActive && <span className="absolute left-0 top-0 bottom-0 w-[3px] bg-blue-600 rounded-r" />}
+                      <span className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full ${BUNDLE_DOT[spotlight.bundle]}`} />
+                      {/* Icon + name row */}
+                      <div className="flex items-center gap-1.5 pr-4">
+                        <ProductIcon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-600'}`} />
+                        <span className={`text-xs leading-tight ${isActive ? 'text-blue-700 font-semibold' : 'text-slate-800 font-medium'}`}>
+                          {spotlight.product.shortName}
+                        </span>
                       </div>
-                    )}
+                      {/* Control count */}
+                      <span className="text-[11px] text-slate-500 mt-0.5 pl-[26px]">
+                        {spotlight.coveredControls}/{spotlight.totalControls} controls
+                      </span>
+                      {/* Coverage bar */}
+                      <div className="w-full h-[3px] bg-slate-200 rounded-full mt-1.5 overflow-hidden">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: `${spotlight.averageCoverage}%` }} />
+                      </div>
+                    </button>
                   </div>
                 );
               })}
             </div>
 
+            {/* Clear filter footer */}
             {productFilter !== 'all' && (
               <button
                 type="button"
                 onClick={() => setProductFilter('all')}
-                className="mt-auto mb-1 w-8 h-8 rounded-md hover:bg-slate-200 text-slate-500 inline-flex items-center justify-center"
-                aria-label="Clear product filter"
+                className="mt-2 mx-2 mb-1 flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 py-1"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3 h-3" />
+                Clear filter
               </button>
             )}
           </div>
         </aside>
+      )}
+
+      {/* ── Fixed hover tooltip (desktop) ── */}
+      {hoveredProductId && tooltipPos && tooltipSpotlight && (
+        <div
+          style={{ position: 'fixed', top: tooltipPos.top, left: tooltipPos.left + 8, zIndex: 50, width: 264 }}
+          className="bg-white border border-slate-200 rounded-xl shadow-lg p-4"
+          onMouseEnter={handleTooltipEnter}
+          onMouseLeave={handleRowLeave}
+        >
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="font-semibold text-slate-900 text-sm leading-snug">{tooltipSpotlight.product.name}</p>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white capitalize shrink-0 ${BUNDLE_DOT[tooltipSpotlight.bundle]}`}>
+              {tooltipSpotlight.bundle}
+            </span>
+          </div>
+          <p className="text-xs text-slate-600">
+            Covers {tooltipSpotlight.coveredControls} / {tooltipSpotlight.totalControls} controls · {tooltipSpotlight.averageCoverage}% avg
+          </p>
+          <p className="text-xs text-slate-500 mt-2 line-clamp-2">{tooltipSpotlight.product.description}</p>
+          <p className="text-xs text-slate-400 mt-2">Click to filter controls →</p>
+          <a
+            href={tooltipSpotlight.product.website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold mt-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Open product page <ExternalLink className="w-3 h-3" />
+          </a>
+        </div>
       )}
 
       <div className="flex-1 min-w-0 space-y-5 px-4 lg:px-8 py-6">
@@ -236,6 +273,7 @@ export default function FrameworkDetailPage() {
           Back to Frameworks
         </Link>
 
+        {/* ── Mobile horizontal product strip ── */}
         {productSpotlights.length > 0 && (
           <div className="lg:hidden">
             <div className="flex items-center gap-2 mb-2">
@@ -251,7 +289,7 @@ export default function FrameworkDetailPage() {
                 </button>
               )}
             </div>
-            <div className="overflow-x-auto pb-2">
+            <div className="overflow-x-auto pb-2 scrollbar-clean">
               <div className="flex gap-2 min-w-max">
                 {productSpotlights.map((spotlight) => {
                   const ProductIcon = PRODUCT_ICONS[spotlight.product.id] ?? Package2;
@@ -261,45 +299,21 @@ export default function FrameworkDetailPage() {
                       key={spotlight.product.id}
                       type="button"
                       onClick={() => toggleProductFilter(spotlight.product.id)}
-                      className={`relative w-14 h-[62px] rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-start pt-1.5 ${isActive ? 'bg-blue-50 border-blue-200' : ''}`}
+                      className={`relative w-[80px] h-[60px] rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors flex flex-col items-center justify-center gap-0.5 pt-1 px-1 ${isActive ? 'bg-blue-50 border-blue-200' : ''}`}
                     >
                       <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${BUNDLE_DOT[spotlight.bundle]}`} />
-                      <ProductIcon className={`w-7 h-7 ${isActive ? 'text-blue-700' : 'text-slate-700'}`} />
-                      <span className="text-[10px] font-semibold text-slate-600 mt-1">
+                      <ProductIcon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-700' : 'text-slate-600'}`} />
+                      <span className={`text-[10px] font-medium text-center leading-tight w-full truncate px-0.5 ${isActive ? 'text-blue-700' : 'text-slate-700'}`}>
+                        {spotlight.product.shortName}
+                      </span>
+                      <span className="text-[9px] text-slate-500">
                         {spotlight.coveredControls}/{spotlight.totalControls}
                       </span>
-                      <span className="absolute bottom-0 left-0 h-[3px] bg-blue-500 rounded-b-lg" style={{ width: `${Math.max(6, spotlight.averageCoverage)}%` }} />
                     </button>
                   );
                 })}
               </div>
             </div>
-            {hoveredProduct && (() => {
-              const spotlight = productSpotlights.find((item) => item.product.id === hoveredProduct);
-              if (!spotlight) return null;
-              return (
-                <div className="mt-2 bg-white border border-slate-200 rounded-xl p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-semibold text-slate-900 text-sm">{spotlight.product.name}</p>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full text-white ${BUNDLE_DOT[spotlight.bundle]}`}>
-                      {spotlight.bundle}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Covers {spotlight.coveredControls} / {spotlight.totalControls} controls
-                  </p>
-                  <p className="text-xs text-slate-500 mt-1 line-clamp-1">{spotlight.product.description}</p>
-                  <a
-                    href={spotlight.product.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-semibold mt-2"
-                  >
-                    Open product page <ExternalLink className="w-3 h-3" />
-                  </a>
-                </div>
-              );
-            })()}
           </div>
         )}
 
@@ -333,6 +347,24 @@ export default function FrameworkDetailPage() {
           </div>
         </div>
 
+        {/* Infographic callout */}
+        {infographicUrl && (
+          <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+            <FileDown className="w-5 h-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-slate-700 flex-1">
+              Download the official ManageEngine <strong>{framework.name}</strong> compliance infographic
+            </p>
+            <a
+              href={infographicUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 hover:text-blue-700 shrink-0"
+            >
+              Download PDF <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
+
         {frameworkInsight && (
           <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
             <Info className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
@@ -343,7 +375,7 @@ export default function FrameworkDetailPage() {
         )}
 
         {activeProduct && (
-          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5">
+          <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 transition-opacity duration-200">
             <span className="text-sm text-blue-800 font-medium flex-1">
               Filtered by <strong>{activeProduct.shortName}</strong> — showing {filtered.length} of {controls.length} controls
             </span>
@@ -354,7 +386,7 @@ export default function FrameworkDetailPage() {
           </div>
         )}
 
-        <div ref={controlsRef} className="space-y-3">
+        <div ref={controlsRef} className="space-y-3 scroll-mt-20">
           <div className="flex flex-wrap gap-3 items-center">
             <Filter className="w-4 h-4 text-slate-400" />
             <div className="flex gap-2 flex-wrap">

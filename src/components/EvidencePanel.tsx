@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  FileDown,
   FileText,
   Lightbulb,
   ShieldCheck,
@@ -28,6 +29,7 @@ const sectionTitles: Record<EvidenceSource['type'], string> = {
   product: 'ManageEngine Product References',
   methodology: 'Methodology Notes',
   verification: 'Verification Status',
+  infographic: 'ManageEngine Reference Materials',
 };
 
 const sectionIcons: Record<EvidenceSource['type'], typeof FileText> = {
@@ -35,6 +37,7 @@ const sectionIcons: Record<EvidenceSource['type'], typeof FileText> = {
   product: ExternalLink,
   methodology: Lightbulb,
   verification: ShieldCheck,
+  infographic: FileDown,
 };
 
 function getPageKey(pathname: string) {
@@ -72,7 +75,7 @@ export default function EvidencePanel() {
           acc[source.type].push(source);
           return acc;
         },
-        { standard: [], product: [], methodology: [], verification: [] },
+        { standard: [], product: [], methodology: [], verification: [], infographic: [] },
       ),
     [sources],
   );

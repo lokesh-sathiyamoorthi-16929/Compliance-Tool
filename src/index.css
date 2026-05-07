@@ -22,3 +22,27 @@
     @apply bg-white rounded-xl border border-slate-200 shadow-sm;
   }
 }
+
+@layer utilities {
+  .scrollbar-clean {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .scrollbar-clean::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(203 213 225);
+    border-radius: 9999px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
