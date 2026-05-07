@@ -43,7 +43,7 @@ export const manageEngineProducts: MEProduct[] = [
     shortName: 'ADManager Plus',
     category: 'Active Directory Management',
     description: 'Web-based AD management and reporting tool for user provisioning, delegation, and compliance workflows.',
-    website: 'https://www.manageengine.com/active-directory-management/',
+    website: 'https://www.manageengine.com/products/ad-manager/',
     useCases: [
       'User lifecycle management',
       'Role-based access control',

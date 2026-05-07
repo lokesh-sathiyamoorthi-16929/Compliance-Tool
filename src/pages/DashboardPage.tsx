@@ -142,6 +142,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Score gauge */}
         <div className="card p-6 flex flex-col items-center">
+          {/* Narrative above gauge */}
+          <div className="w-full mb-3 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 text-xs text-blue-800">
+            Your <strong>{framework?.name ?? 'compliance'}</strong> posture is{' '}
+            <strong>
+              {scoreData.overallScore >= 80 ? 'Managed (Tier 4)' : scoreData.overallScore >= 60 ? 'Defined (Tier 3)' : scoreData.overallScore >= 40 ? 'Developing (Tier 2)' : 'Initial (Tier 1)'}
+            </strong>
+            . Closing the top gaps below would advance your tier and reduce audit risk.
+          </div>
           <ScoreGauge score={scoreData.overallScore} size={200} />
           <div className="mt-3 text-center">
             <MaturityBadge score={scoreData.overallScore} size="md" />

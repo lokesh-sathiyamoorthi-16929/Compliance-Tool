@@ -7,6 +7,7 @@ import FrameworkCard from '../components/FrameworkCard';
 export default function FrameworksPage() {
   const { wizardAnswers } = useAppStore();
   const { mandatory, recommended } = determineApplicableFrameworks(wizardAnswers);
+  const totalFrameworks = mandatory.length + recommended.length;
 
   return (
     <div>
@@ -24,6 +25,18 @@ export default function FrameworksPage() {
             Retake Wizard
           </Link>
         </div>
+
+        {totalFrameworks > 0 && (
+          <div className="mt-4 flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
+            <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-blue-800">
+              <strong>Based on your profile, {totalFrameworks} {totalFrameworks === 1 ? 'framework applies' : 'frameworks apply'} to your organization.</strong>{' '}
+              {mandatory.length > 0 && <span>{mandatory.length} {mandatory.length === 1 ? 'is' : 'are'} mandatory</span>}
+              {mandatory.length > 0 && recommended.length > 0 && ' and '}
+              {recommended.length > 0 && <span>{recommended.length} {recommended.length === 1 ? 'is' : 'are'} strongly recommended</span>}.
+            </p>
+          </div>
+        )}
       </div>
 
       {mandatory.length === 0 && recommended.length === 0 && (

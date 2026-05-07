@@ -34,7 +34,7 @@ export const nist800171Controls: Control[] = [
       'Schedule monthly access reviews for privileged groups',
       'Enforce strict deprovisioning SLAs for separated users',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -64,7 +64,7 @@ export const nist800171Controls: Control[] = [
       'Record all privileged sessions and review high-risk commands',
       'Apply separation of duties controls for critical systems',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -100,7 +100,7 @@ export const nist800171Controls: Control[] = [
       'Validate onboarding for all in-scope systems quarterly',
       'Alert on gaps in log ingestion and audit trail integrity',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -130,7 +130,7 @@ export const nist800171Controls: Control[] = [
       'Disable legacy authentication protocols incompatible with MFA',
       'Review MFA policy exceptions each month',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -160,7 +160,7 @@ export const nist800171Controls: Control[] = [
       'Run tabletop simulation for ransomware and insider scenarios',
       'Track incident response metrics and corrective actions',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -196,7 +196,7 @@ export const nist800171Controls: Control[] = [
       'Keep chain-of-custody records for media destruction events',
       'Perform periodic audits of media disposal processes',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -232,7 +232,7 @@ export const nist800171Controls: Control[] = [
       'Use patch automation to reduce remediation latency',
       'Report unresolved critical findings to governance committee',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -268,7 +268,7 @@ export const nist800171Controls: Control[] = [
       'Automate certificate renewal for expiring assets',
       'Conduct quarterly encryption posture assessments',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -304,7 +304,7 @@ export const nist800171Controls: Control[] = [
       'Run post-patch validation scans for remediation assurance',
       'Escalate delayed remediation items with business risk context',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
   {
@@ -334,7 +334,7 @@ export const nist800171Controls: Control[] = [
       'Integrate threat intelligence feeds and tune false positives',
       'Measure detection-to-response timelines monthly',
     ],
-    referenceUrl: 'https://csrc.nist.gov/publications/detail/sp/800-171/rev-2/final',
+    referenceUrl: 'https://csrc.nist.gov/pubs/sp/800/171/r3/final',
     inItScope: true,
   },
 ];

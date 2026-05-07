@@ -1,11 +1,21 @@
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
+import {
+  ArrowLeft, ArrowRight, RotateCcw, Loader2,
+  HeartPulse, Banknote, ShoppingCart, Laptop, GraduationCap,
+  Landmark, Shield, Zap, Factory, Building2,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import WizardStep from '../components/WizardStep';
 import { usStates } from '../data/usStates';
 import { industries } from '../data/industries';
 import type { DataType, CustomerGeography, BusinessContext, Industry } from '../types';
+
+const INDUSTRY_ICONS: Record<string, LucideIcon> = {
+  HeartPulse, Banknote, ShoppingCart, Laptop, GraduationCap,
+  Landmark, Shield, Zap, Factory, Building2,
+};
 
 const TOTAL_STEPS = 8;
 
@@ -19,13 +29,13 @@ const dataTypeOptions: { id: DataType; label: string; description: string }[] = 
   { id: 'financial_data', label: 'Financial / Banking Data', description: 'Customer financial account data' },
 ];
 
-const geographyOptions: { id: CustomerGeography; label: string; flag: string }[] = [
-  { id: 'us', label: 'United States', flag: '🇺🇸' },
-  { id: 'eu', label: 'European Union', flag: '🇪🇺' },
-  { id: 'uk', label: 'United Kingdom', flag: '🇬🇧' },
-  { id: 'canada', label: 'Canada', flag: '🇨🇦' },
-  { id: 'california', label: 'California Residents', flag: '☀️' },
-  { id: 'other', label: 'Other Regions', flag: '🌍' },
+const geographyOptions: { id: CustomerGeography; label: string }[] = [
+  { id: 'us', label: 'United States' },
+  { id: 'eu', label: 'European Union' },
+  { id: 'uk', label: 'United Kingdom' },
+  { id: 'canada', label: 'Canada' },
+  { id: 'california', label: 'California Residents' },
+  { id: 'other', label: 'Other Regions' },
 ];
 
 const businessContextOptions: { id: BusinessContext; label: string }[] = [
@@ -48,7 +58,7 @@ function MultiSelectChip<T extends string>({
   selected,
   onToggle,
 }: {
-  options: { id: T; label: string; description?: string; flag?: string }[];
+  options: { id: T; label: string; description?: string }[];
   selected: T[];
   onToggle: (id: T) => void;
 }) {
@@ -67,7 +77,6 @@ function MultiSelectChip<T extends string>({
                 : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50'
             }`}
           >
-            {opt.flag && <span>{opt.flag}</span>}
             <span>{opt.label}</span>
             {opt.description && !isSelected && (
               <span className="text-xs text-slate-400 hidden sm:inline">— {opt.description}</span>
@@ -84,12 +93,16 @@ export default function WizardPage() {
   const { wizardAnswers, wizardStep, setWizardAnswer, setWizardStep, resetWizard } =
     useAppStore();
   const [stateSearch, setStateSearch] = useState('');
+  const [analyzing, setAnalyzing] = useState(false);
 
   const step = wizardStep;
 
   const next = () => {
     if (step < TOTAL_STEPS - 1) setWizardStep(step + 1);
-    else navigate('/frameworks');
+    else {
+      setAnalyzing(true);
+      setTimeout(() => navigate('/frameworks'), 1500);
+    }
   };
   const back = () => {
     if (step > 0) setWizardStep(step - 1);
@@ -114,6 +127,14 @@ export default function WizardPage() {
 
   return (
     <div>
+      {/* Analyzing overlay */}
+      {analyzing && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/90 backdrop-blur-sm">
+          <Loader2 className="w-12 h-12 text-blue-600 animate-spin mb-4" />
+          <p className="text-lg font-semibold text-slate-800">Analyzing 12 frameworks against your profile…</p>
+          <p className="text-sm text-slate-500 mt-1">Finding your compliance obligations</p>
+        </div>
+      )}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Applicability Wizard</h1>
@@ -218,6 +239,7 @@ export default function WizardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {industries.map((ind) => {
                 const isSelected = wizardAnswers.industry === ind.id;
+                const IndIcon = INDUSTRY_ICONS[ind.iconName] ?? Building2;
                 return (
                   <button
                     key={ind.id}
@@ -229,7 +251,7 @@ export default function WizardPage() {
                         : 'bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:shadow-sm'
                     }`}
                   >
-                    <span className="text-2xl block mb-1">{ind.icon}</span>
+                    <IndIcon className={`w-6 h-6 block mb-1 ${isSelected ? 'text-white' : 'text-blue-600'}`} />
                     <span className="font-semibold block">{ind.label}</span>
                     <span className={`text-xs ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
                       {ind.description}
@@ -265,7 +287,7 @@ export default function WizardPage() {
             stepNumber={5}
             totalSteps={TOTAL_STEPS}
           >
-            <MultiSelectChip
+          <MultiSelectChip
               options={geographyOptions}
               selected={wizardAnswers.customerGeography}
               onToggle={(id) => toggleArrayValue('customerGeography', id)}
@@ -416,7 +438,7 @@ export default function WizardPage() {
             onClick={next}
             className="btn-primary"
           >
-            {step === TOTAL_STEPS - 1 ? 'See My Frameworks' : 'Next'}
+            {step === TOTAL_STEPS - 1 ? 'See My Compliance Frameworks' : 'Next'}
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

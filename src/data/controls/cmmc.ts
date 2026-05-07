@@ -34,7 +34,7 @@ export const cmmcControls: Control[] = [
       'Enforce quarterly account recertification for all privileged users',
       'Automate immediate deprovisioning for terminated workforce members',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -64,7 +64,7 @@ export const cmmcControls: Control[] = [
       'Remove standing privileged rights where not required',
       'Enable full session recording for privileged operations',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -100,7 +100,7 @@ export const cmmcControls: Control[] = [
       'Enable automatic alerts for log source outages',
       'Validate retention policy quarterly against contract requirements',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -136,7 +136,7 @@ export const cmmcControls: Control[] = [
       'Create weekly accountability reports for privileged user actions',
       'Tune UEBA alerts for anomalous account behavior',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -166,7 +166,7 @@ export const cmmcControls: Control[] = [
       'Disable POP/IMAP basic authentication pathways',
       'Track MFA failures and policy bypass attempts weekly',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -202,7 +202,7 @@ export const cmmcControls: Control[] = [
       'Rotate privileged credentials automatically with Password Manager Pro',
       'Review lockout and brute-force events daily',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -232,7 +232,7 @@ export const cmmcControls: Control[] = [
       'Run quarterly incident drills with security and operations teams',
       'Track response SLA performance and corrective actions',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -262,7 +262,7 @@ export const cmmcControls: Control[] = [
       'Automate high-severity incident notifications to compliance stakeholders',
       'Review incident register completeness monthly',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -298,7 +298,7 @@ export const cmmcControls: Control[] = [
       'Set alerts on certificate expiration within 30 days',
       'Inventory and replace non-compliant cryptographic libraries',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -334,7 +334,7 @@ export const cmmcControls: Control[] = [
       'Implement automated data owner reviews for sensitive shares',
       'Enable near-real-time alerts for exfiltration-like file access patterns',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -370,7 +370,7 @@ export const cmmcControls: Control[] = [
       'Integrate vulnerability findings with patch deployment workflows',
       'Report unresolved critical findings to leadership each week',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
   {
@@ -400,7 +400,7 @@ export const cmmcControls: Control[] = [
       'Adopt threat hunting cadence for high-value systems',
       'Measure mean time to detect and mean time to respond monthly',
     ],
-    referenceUrl: 'https://www.acq.osd.mil/cmmc/',
+    referenceUrl: 'https://dodcio.defense.gov/CMMC/',
     inItScope: true,
   },
 ];
