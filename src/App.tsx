@@ -6,11 +6,14 @@ import FrameworksPage from './pages/FrameworksPage';
 import FrameworkDetailPage from './pages/FrameworkDetailPage';
 import ConnectionsPage from './pages/ConnectionsPage';
 import DashboardPage from './pages/DashboardPage';
+import ComparePage from './pages/ComparePage';
 import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
+  const basename = import.meta.env.PROD ? '/Compliance-Tool' : '/';
+
   return (
-    <BrowserRouter basename="/Compliance-Tool">
+    <BrowserRouter basename={basename}>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<LandingPage />} />
@@ -19,6 +22,7 @@ export default function App() {
           <Route path="frameworks/:id" element={<FrameworkDetailPage />} />
           <Route path="connections" element={<ConnectionsPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="compare" element={<ComparePage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

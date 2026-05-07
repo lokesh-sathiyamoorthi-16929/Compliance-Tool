@@ -9,7 +9,7 @@ export default function FrameworksPage() {
   const { mandatory, recommended } = determineApplicableFrameworks(wizardAnswers);
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div>
       <div className="mb-8">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>

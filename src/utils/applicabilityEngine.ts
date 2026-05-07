@@ -53,6 +53,17 @@ export function determineApplicableFrameworks(
   ) {
     mandatoryIds.add('nist800171');
     mandatoryIds.add('cmmc');
+    recommendedIds.add('nist80053');
+    recommendedIds.add('fedramp');
+
+    if (businessContext.includes('cloud_hosted')) {
+      mandatoryIds.add('fedramp');
+    }
+  }
+
+  // Law enforcement agencies
+  if (industry === 'law_enforcement') {
+    mandatoryIds.add('cjis');
   }
 
   // GLBA: Financial services industry

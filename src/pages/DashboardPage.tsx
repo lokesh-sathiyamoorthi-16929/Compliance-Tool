@@ -5,7 +5,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import {
-  TrendingUp, Download, GitBranch, ChevronDown, Plug, ArrowUpRight,
+  TrendingUp, Download, GitBranch, ChevronDown, Plug, ArrowUpRight, Loader2,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { frameworks } from '../data/frameworks';
@@ -13,6 +13,7 @@ import { getScoreData } from '../data/mockScoreData';
 import ScoreGauge from '../components/ScoreGauge';
 import MaturityBadge from '../components/MaturityBadge';
 import RemediationItem from '../components/RemediationItem';
+import { exportExecutivePdf, exportAuditorPdf } from '../utils/pdfExport';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -24,6 +25,7 @@ function toast(msg: string) {
 export default function DashboardPage() {
   const { selectedFrameworkId, setSelectedFrameworkId } = useAppStore();
   const [showFwDropdown, setShowFwDropdown] = useState(false);
+  const [exportingReport, setExportingReport] = useState<'executive' | 'auditor' | null>(null);
 
   const scoreData = getScoreData(selectedFrameworkId);
   const framework = frameworks.find((f) => f.id === selectedFrameworkId);
@@ -43,8 +45,24 @@ export default function DashboardPage() {
         scoreData.trend[scoreData.trend.length - 2].score
       : 0;
 
+  const handleExecutiveExport = async () => {
+    if (!framework) return;
+    setExportingReport('executive');
+    await exportExecutivePdf(framework, scoreData);
+    setExportingReport(null);
+    toast('Report downloaded ✓');
+  };
+
+  const handleAuditorExport = async () => {
+    if (!framework) return;
+    setExportingReport('auditor');
+    await exportAuditorPdf(framework, scoreData);
+    setExportingReport(null);
+    toast('Report downloaded ✓');
+  };
+
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div>
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
@@ -84,18 +102,13 @@ export default function DashboardPage() {
             )}
           </div>
 
-          <button
-            onClick={() => toast('Export to PDF — Coming soon in Phase 2!')}
-            className="btn-secondary text-sm"
-          >
-            <Download className="w-4 h-4" />
-            Export PDF
+          <button onClick={handleExecutiveExport} className="btn-secondary text-sm" disabled={exportingReport !== null}>
+            {exportingReport === 'executive' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Export Executive PDF
           </button>
-          <button
-            onClick={() => toast('Auditor export — Coming soon in Phase 2!')}
-            className="btn-secondary text-sm"
-          >
-            Export for Auditor
+          <button onClick={handleAuditorExport} className="btn-secondary text-sm" disabled={exportingReport !== null}>
+            {exportingReport === 'auditor' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Export Auditor Report
           </button>
         </div>
       </div>
@@ -130,7 +143,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Score trend */}
-        <div className="card p-6 col-span-2">
+        <div className="card p-6 col-span-2" id="trend-chart">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Score Trend (6 Months)</h3>
           <ResponsiveContainer width="100%" height={160}>
             <LineChart data={scoreData.trend}>
@@ -157,7 +170,7 @@ export default function DashboardPage() {
       {/* Charts row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Bar chart */}
-        <div className="card p-6">
+        <div className="card p-6" id="family-chart">
           <h3 className="text-sm font-semibold text-slate-700 mb-4">Score by Control Family</h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart

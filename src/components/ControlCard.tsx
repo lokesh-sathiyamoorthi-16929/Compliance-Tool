@@ -52,6 +52,27 @@ export default function ControlCard({ control }: Props) {
             </div>
             <h4 className="font-semibold text-slate-900">{control.title}</h4>
             <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{control.description}</p>
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {control.manageEngineProducts.slice(0, 3).map((mapping) => {
+                const product = getProductById(mapping.productId);
+                if (!product) return null;
+
+                return (
+                  <span
+                    key={mapping.productId}
+                    className="text-xs px-2 py-0.5 rounded-full border font-medium"
+                    style={{
+                      color: product.color,
+                      borderColor: `${product.color}55`,
+                      backgroundColor: `${product.color}12`,
+                    }}
+                  >
+                    {product.shortName}
+                    {mapping.primary ? ' • Primary' : ''}
+                  </span>
+                );
+              })}
+            </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-right">
