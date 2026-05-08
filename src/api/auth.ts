@@ -2,17 +2,11 @@ import { apiRequest } from './client';
 
 export interface User {
   id: string;
-  email: string;
+  username: string;
   fullName: string;
   role: string;
+  mustChangePassword: boolean;
   createdAt: string;
-}
-
-export interface RegisterPayload {
-  email: string;
-  password: string;
-  fullName: string;
-  inviteToken?: string;
 }
 
 interface AuthResponse {
@@ -21,15 +15,7 @@ interface AuthResponse {
   refreshToken: string;
 }
 
-export function register(payload: RegisterPayload) {
-  return apiRequest<AuthResponse>('/auth/register', {
-    method: 'POST',
-    body: payload,
-    skipAuth: true,
-  });
-}
-
-export function login(payload: { email: string; password: string }) {
+export function login(payload: { username: string; password: string }) {
   return apiRequest<AuthResponse>('/auth/login', {
     method: 'POST',
     body: payload,
@@ -49,6 +35,13 @@ export function refresh(refreshToken: string) {
 export function logout() {
   return apiRequest<void>('/auth/logout', {
     method: 'POST',
+  });
+}
+
+export function changePassword(payload: { currentPassword: string; newPassword: string }) {
+  return apiRequest<void>('/auth/change-password', {
+    method: 'POST',
+    body: payload,
   });
 }
 

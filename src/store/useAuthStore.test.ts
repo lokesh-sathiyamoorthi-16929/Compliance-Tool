@@ -29,9 +29,10 @@ describe('useAuthStore', () => {
         JSON.stringify({
           user: {
             id: 'u1',
-            email: 'user@example.com',
+            username: 'testuser',
             fullName: 'Demo User',
             role: 'admin',
+            mustChangePassword: false,
             createdAt: '2026-01-01T00:00:00.000Z',
           },
           accessToken: 'access-1',
@@ -41,13 +42,41 @@ describe('useAuthStore', () => {
       ),
     );
 
-    await useAuthStore.getState().login('user@example.com', 'password123');
+    await useAuthStore.getState().login('testuser', 'password123');
 
     const state = useAuthStore.getState();
     expect(state.status).toBe('authenticated');
-    expect(state.user?.email).toBe('user@example.com');
+    expect(state.user?.username).toBe('testuser');
+    expect(state.user?.mustChangePassword).toBe(false);
     expect(state.accessToken).toBe('access-1');
     expect(state.refreshToken).toBe('refresh-1');
+  });
+
+  it('persists mustChangePassword on login', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          user: {
+            id: 'u1',
+            username: 'admin',
+            fullName: 'Admin User',
+            role: 'admin',
+            mustChangePassword: true,
+            createdAt: '2026-01-01T00:00:00.000Z',
+          },
+          accessToken: 'access-1',
+          refreshToken: 'refresh-1',
+        }),
+        { status: 200 },
+      ),
+    );
+
+    await useAuthStore.getState().login('admin', 'admin');
+
+    const state = useAuthStore.getState();
+    expect(state.status).toBe('authenticated');
+    expect(state.user?.username).toBe('admin');
+    expect(state.user?.mustChangePassword).toBe(true);
   });
 
   it('refreshes token when /me returns 401 during hydrate', async () => {
@@ -81,9 +110,10 @@ describe('useAuthStore', () => {
       new Response(
         JSON.stringify({
           id: 'u1',
-          email: 'user@example.com',
+          username: 'testuser',
           fullName: 'Demo User',
           role: 'admin',
+          mustChangePassword: false,
           createdAt: '2026-01-01T00:00:00.000Z',
         }),
         { status: 200 },
@@ -96,7 +126,7 @@ describe('useAuthStore', () => {
     expect(state.status).toBe('authenticated');
     expect(state.accessToken).toBe('new-access-token');
     expect(state.refreshToken).toBe('new-refresh-token');
-    expect(state.user?.email).toBe('user@example.com');
+    expect(state.user?.username).toBe('testuser');
   });
 
   it('hydrates with valid tokens', async () => {
@@ -109,9 +139,10 @@ describe('useAuthStore', () => {
       new Response(
         JSON.stringify({
           id: 'u2',
-          email: 'valid@example.com',
+          username: 'validuser',
           fullName: 'Valid User',
           role: 'analyst',
+          mustChangePassword: false,
           createdAt: '2026-02-01T00:00:00.000Z',
         }),
         { status: 200 },
@@ -122,7 +153,7 @@ describe('useAuthStore', () => {
 
     const state = useAuthStore.getState();
     expect(state.status).toBe('authenticated');
-    expect(state.user?.email).toBe('valid@example.com');
+    expect(state.user?.username).toBe('validuser');
     expect(state.accessToken).toBe('access-token');
   });
 

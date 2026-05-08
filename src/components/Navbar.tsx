@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Shield,
   LayoutDashboard,
@@ -10,6 +10,7 @@ import {
   Scale,
   LogOut,
   ChevronDown,
+  Users,
 } from 'lucide-react';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
@@ -38,6 +39,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
   const visibleNavItems = demoMode || isAuthenticated ? navItems : [navItems[0]];
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const onClickOutside = (event: MouseEvent) => {
@@ -52,7 +54,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
     };
   }, []);
 
-  const initials = (user?.fullName || user?.email || 'U')
+  const initials = (user?.fullName || user?.username || 'U')
     .split(' ')
     .map((part) => part.charAt(0).toUpperCase())
     .join('')
@@ -61,6 +63,11 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
   const onLogout = async () => {
     setMenuOpen(false);
     await logout();
+  };
+
+  const goToUsers = () => {
+    setMenuOpen(false);
+    navigate('/admin/users');
   };
 
   return (
@@ -120,9 +127,19 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
               {menuOpen ? (
                 <div className="absolute right-0 mt-2 w-64 rounded-lg border border-slate-200 bg-white py-2 shadow-lg">
                   <div className="border-b border-slate-100 px-3 pb-2">
-                    <p className="text-sm font-semibold text-slate-900">{user.fullName}</p>
-                    <p className="text-xs text-slate-500">{user.email}</p>
+                    <p className="text-sm font-semibold text-slate-900">{user.fullName || user.username}</p>
+                    <p className="text-xs text-slate-500">@{user.username}</p>
                   </div>
+                  {user.role === 'admin' && (
+                    <button
+                      type="button"
+                      onClick={goToUsers}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Users className="h-4 w-4" />
+                      Users
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={onLogout}
