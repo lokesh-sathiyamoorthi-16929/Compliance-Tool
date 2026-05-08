@@ -36,7 +36,7 @@ export default function ChangePasswordPage() {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.code === 'WEAK_PASSWORD') {
-          setErrorMessage('Password is too weak. Choose at least 4 characters.');
+          setErrorMessage('Password is too weak. Please choose a stronger password.');
         } else if (error.code === 'INVALID_CREDENTIALS') {
           setErrorMessage('Current password is incorrect.');
         } else {

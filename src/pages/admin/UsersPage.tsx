@@ -85,7 +85,9 @@ export default function UsersPage() {
   };
 
   const generatePassword = () => {
-    const pwd = crypto.randomUUID().slice(0, 8);
+    const charset = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+    const values = crypto.getRandomValues(new Uint8Array(10));
+    const pwd = Array.from(values, (v) => charset[v % charset.length]).join('');
     setForm((f) => ({ ...f, password: pwd }));
     setFormErrors((e) => ({ ...e, password: undefined }));
   };
@@ -114,7 +116,12 @@ export default function UsersPage() {
 
   const handleSubmit = async () => {
     const usernameErr = validateUsername(form.username);
-    const passwordErr = !form.password ? 'Password is required.' : form.password.length < 4 ? 'Password must be at least 4 characters.' : undefined;
+    let passwordErr: string | undefined;
+    if (!form.password) {
+      passwordErr = 'Password is required.';
+    } else if (form.password.length < 4) {
+      passwordErr = 'Password must be at least 4 characters.';
+    }
 
     setFormErrors({ username: usernameErr, password: passwordErr });
     setSubmitError('');

@@ -24,22 +24,22 @@ export default function ProtectedRoute({ requireRole }: ProtectedRouteProps = {}
     );
   }
 
-  if (status === 'unauthenticated') {
+  if (status === 'unauthenticated' || !user) {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // Force password change gate — exempt /change-password itself
-  if (user?.mustChangePassword && location.pathname !== '/change-password') {
+  if (user.mustChangePassword && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" replace />;
   }
 
   // If already on /change-password but password is already changed, go to dashboard
-  if (!user?.mustChangePassword && location.pathname === '/change-password') {
+  if (!user.mustChangePassword && location.pathname === '/change-password') {
     return <Navigate to="/dashboard" replace />;
   }
 
   // Role-based access control
-  if (requireRole && user?.role !== requireRole) {
+  if (requireRole && user.role !== requireRole) {
     return <Navigate to="/dashboard" replace state={{ permissionDenied: true }} />;
   }
 
