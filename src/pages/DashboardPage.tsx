@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -115,7 +115,7 @@ export default function DashboardPage() {
     toast('Report downloaded ✓');
   };
 
-  const loadLog360Summary = async () => {
+  const loadLog360Summary = useCallback(async () => {
     if (!canShowLog360Card) return;
 
     if (demoMode) {
@@ -148,11 +148,11 @@ export default function DashboardPage() {
       setLog360CardState('error');
       setLog360Error(err instanceof ApiError ? err.message : 'Failed to fetch Log360 score.');
     }
-  };
+  }, [canShowLog360Card, demoMode]);
 
   useEffect(() => {
     void loadLog360Summary();
-  }, [canShowLog360Card, demoMode]);
+  }, [loadLog360Summary]);
 
   return (
     <div>
