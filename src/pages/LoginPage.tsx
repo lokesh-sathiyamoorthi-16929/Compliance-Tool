@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader2, Shield } from 'lucide-react';
 import { ApiError } from '../api/client';
 import { useAuthStore } from '../store/useAuthStore';
@@ -19,13 +19,13 @@ export default function LoginPage() {
     [location.state],
   );
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [showErrors, setShowErrors] = useState(false);
 
-  const emailInvalid = showErrors && !email.trim();
+  const usernameInvalid = showErrors && !username.trim();
   const passwordInvalid = showErrors && !password;
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -33,17 +33,28 @@ export default function LoginPage() {
     setShowErrors(true);
     setErrorMessage('');
 
-    if (!email.trim() || !password) {
+    if (!username.trim() || !password) {
       return;
     }
 
     setPending(true);
     try {
-      await login(email.trim(), password);
-      navigate(fromPath, { replace: true });
+      await login(username.trim(), password);
+      const user = useAuthStore.getState().user;
+      if (user?.mustChangePassword) {
+        navigate('/change-password', { replace: true });
+      } else {
+        navigate(fromPath, { replace: true });
+      }
     } catch (error) {
       if (error instanceof ApiError) {
-        setErrorMessage(error.message);
+        if (error.code === 'INVALID_CREDENTIALS') {
+          setErrorMessage('Incorrect username or password.');
+        } else if (error.code === 'NETWORK_UNREACHABLE') {
+          setErrorMessage("Can't reach the server. Make sure the backend is running.");
+        } else {
+          setErrorMessage(error.message);
+        }
       } else {
         setErrorMessage('Unable to sign in right now. Please try again.');
       }
@@ -70,20 +81,22 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={onSubmit}>
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
-              Email
+            <label htmlFor="username" className="mb-1 block text-sm font-medium text-slate-700">
+              Username
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
+              autoComplete="username"
               required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
+              placeholder="admin"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
               className={`w-full rounded-lg border px-3 py-2 text-slate-900 outline-none transition focus:ring-2 focus:ring-blue-200 ${
-                emailInvalid ? 'border-red-600' : 'border-slate-300'
+                usernameInvalid ? 'border-red-600' : 'border-slate-300'
               }`}
             />
-            {emailInvalid && <p className="mt-1 text-sm text-slate-700">Email is required.</p>}
+            {usernameInvalid && <p className="mt-1 text-sm text-slate-700">Username is required.</p>}
           </div>
 
           <div>
@@ -113,11 +126,8 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-5 text-sm text-slate-600">
-          First time here?{' '}
-          <Link to="/register" className="font-semibold text-blue-600 hover:text-blue-700">
-            Create an account
-          </Link>
+        <p className="mt-5 text-sm text-slate-500 italic">
+          Don&apos;t have an account? Ask your administrator to create one for you.
         </p>
       </div>
     </div>

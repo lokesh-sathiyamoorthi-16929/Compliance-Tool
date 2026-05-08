@@ -7,20 +7,13 @@ import type { User } from '../api/auth';
 
 type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
-interface RegisterInput {
-  email: string;
-  password: string;
-  fullName: string;
-  inviteToken?: string;
-}
-
 interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
   status: AuthStatus;
-  login: (email: string, password: string) => Promise<void>;
-  register: (payload: RegisterInput) => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => Promise<void>;
   hydrate: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
@@ -45,9 +38,9 @@ export const useAuthStore = create<AuthState>()(
           status: 'unauthenticated',
         });
       },
-      login: async (email, password) => {
+      login: async (username, password) => {
         set({ status: 'loading' });
-        const result = await authApi.login({ email, password });
+        const result = await authApi.login({ username, password });
         set({
           user: result.user,
           accessToken: result.accessToken,
@@ -55,15 +48,10 @@ export const useAuthStore = create<AuthState>()(
           status: 'authenticated',
         });
       },
-      register: async (payload) => {
-        set({ status: 'loading' });
-        const result = await authApi.register(payload);
-        set({
-          user: result.user,
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          status: 'authenticated',
-        });
+      changePassword: async (currentPassword, newPassword) => {
+        await authApi.changePassword({ currentPassword, newPassword });
+        const user = await authApi.me();
+        set({ user });
       },
       logout: async () => {
         const { accessToken } = get();

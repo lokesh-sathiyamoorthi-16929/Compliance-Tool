@@ -97,6 +97,7 @@ git clone https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API.git
 cd Compliance-Tool-API
 docker-compose up -d
 npm install
+npm run migrate
 npm run dev
 
 # Terminal 2 - frontend
@@ -110,6 +111,22 @@ The frontend reads `VITE_API_BASE_URL` (default example: `http://localhost:3001`
 
 ---
 
+## 🚀 First Run
+
+After the backend is up and migrated, log in with:
+
+```
+Username: admin
+Password: admin
+```
+
+You will be required to change the password immediately on first login.  
+Then visit the **Users** page (admin dropdown, top-right) to create teammate accounts.
+
+> **Note:** User self-registration is not supported. Administrators create all accounts via the Users page.
+
+---
+
 ## 🧭 Demo Mode vs. Connected Mode
 
 ComplianceIQ now supports two runtime modes:
@@ -119,8 +136,9 @@ ComplianceIQ now supports two runtime modes:
   - No auth gate
   - Public GitHub Pages deployment uses this mode
 - **Connected Mode**: enabled when `VITE_API_BASE_URL` is set and `VITE_DEMO_MODE` is not `true`  
-  - Real backend auth (`/auth/login`, `/auth/register`, `/me`, refresh tokens)
+  - Real backend auth (`/auth/login`, `/me`, refresh tokens)
   - Protected routes require sign-in
+  - Admin users can manage teammates via `/admin/users`
   - Connection indicator shows backend health in the beta banner
 
 ---
