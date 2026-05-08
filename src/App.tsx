@@ -14,6 +14,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import LoginPage from './pages/LoginPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import UsersPage from './pages/admin/UsersPage';
+import CredentialsPage from './pages/admin/CredentialsPage';
 import { useAuthStore } from './store/useAuthStore';
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
           </Route>
           <Route element={<ProtectedRoute requireRole="admin" />}>
             <Route path="admin/users" element={<UsersPage />} />
+            <Route path="admin/credentials" element={<CredentialsPage />} />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Route>

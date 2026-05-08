@@ -11,6 +11,7 @@ import {
   LogOut,
   ChevronDown,
   Users,
+  Key,
 } from 'lucide-react';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
@@ -68,6 +69,11 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
   const goToUsers = () => {
     setMenuOpen(false);
     navigate('/admin/users');
+  };
+
+  const goToCredentials = () => {
+    setMenuOpen(false);
+    navigate('/admin/credentials');
   };
 
   return (
@@ -131,14 +137,24 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
                     <p className="text-xs text-slate-500">@{user.username}</p>
                   </div>
                   {user.role === 'admin' && (
-                    <button
-                      type="button"
-                      onClick={goToUsers}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Users className="h-4 w-4" />
-                      Users
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={goToUsers}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Users className="h-4 w-4" />
+                        Users
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goToCredentials}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Key className="h-4 w-4" />
+                        Credentials
+                      </button>
+                    </>
                   )}
                   <button
                     type="button"
