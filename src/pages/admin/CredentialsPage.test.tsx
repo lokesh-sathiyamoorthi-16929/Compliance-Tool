@@ -5,7 +5,7 @@ import CredentialsPage from './CredentialsPage';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuthStore } from '../../store/useAuthStore';
 import { credentialsApi } from '../../api/credentials';
-import type { CredentialMeta } from '../../api/credentials';
+import type { CredentialMeta, CredentialTestResult } from '../../api/credentials';
 import type { User } from '../../api/auth';
 
 vi.mock('../../api/credentials');
@@ -39,11 +39,9 @@ const mockCred: CredentialMeta = {
   lastTestError: null,
 };
 
-const mockCredTested: CredentialMeta = {
-  ...mockCred,
-  lastTestAt: new Date().toISOString(),
-  lastTestStatus: 'success',
-  lastTestError: null,
+const mockTestResult: CredentialTestResult = {
+  success: true,
+  testedAt: new Date().toISOString(),
 };
 
 function renderCredentialsPage() {
@@ -93,7 +91,7 @@ describe('CredentialsPage', () => {
     // Provide stable defaults so each test starts with a clean mock queue
     vi.mocked(credentialsApi.list).mockResolvedValue([]);
     vi.mocked(credentialsApi.create).mockResolvedValue(mockCred);
-    vi.mocked(credentialsApi.test).mockResolvedValue(mockCredTested);
+    vi.mocked(credentialsApi.test).mockResolvedValue(mockTestResult);
     vi.mocked(credentialsApi.delete).mockResolvedValue(undefined);
   });
 
@@ -219,6 +217,26 @@ describe('CredentialsPage', () => {
       expect(screen.getByText('Tested')).toBeInTheDocument();
     });
     expect(credentialsApi.test).toHaveBeenCalledWith('c1');
+  });
+
+  it('test action keeps name, type, and server URL visible', async () => {
+    vi.mocked(credentialsApi.list).mockResolvedValue([mockCred]);
+
+    renderCredentialsPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Prod Log360')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /Test Prod Log360/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Tested')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Prod Log360')).toBeInTheDocument();
+    expect(screen.getByText('Log360')).toBeInTheDocument();
+    expect(screen.getByText('https://log360.example.com')).toBeInTheDocument();
   });
 
   it('delete flow removes credential row', async () => {

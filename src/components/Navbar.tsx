@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Users,
   Key,
+  Activity,
 } from 'lucide-react';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
@@ -74,6 +75,11 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
   const goToCredentials = () => {
     setMenuOpen(false);
     navigate('/admin/credentials');
+  };
+
+  const goToLog360 = () => {
+    setMenuOpen(false);
+    navigate('/integrations/log360');
   };
 
   return (
@@ -153,6 +159,14 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
                       >
                         <Key className="h-4 w-4" />
                         Credentials
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goToLog360}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Activity className="h-4 w-4" />
+                        Integrations · Log360
                       </button>
                     </>
                   )}

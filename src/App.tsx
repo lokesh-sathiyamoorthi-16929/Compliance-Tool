@@ -16,6 +16,8 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import UsersPage from './pages/admin/UsersPage';
 import CredentialsPage from './pages/admin/CredentialsPage';
 import { useAuthStore } from './store/useAuthStore';
+import { isDemoMode } from './config/env';
+import Log360DetailPage from './pages/integrations/Log360DetailPage';
 
 export default function App() {
   const basename = import.meta.env.PROD ? '/Compliance-Tool' : '/';
@@ -60,6 +62,10 @@ export default function App() {
           <Route element={<ProtectedRoute requireRole="admin" />}>
             <Route path="admin/users" element={<UsersPage />} />
             <Route path="admin/credentials" element={<CredentialsPage />} />
+            <Route
+              path="integrations/log360"
+              element={isDemoMode() ? <Navigate to="/dashboard" replace /> : <Log360DetailPage />}
+            />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
         </Route>

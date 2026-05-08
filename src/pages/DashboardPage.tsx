@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,8 +14,56 @@ import ScoreGauge from '../components/ScoreGauge';
 import MaturityBadge from '../components/MaturityBadge';
 import RemediationItem from '../components/RemediationItem';
 import { exportExecutivePdf, exportAuditorPdf } from '../utils/pdfExport';
+import { ApiError } from '../api/client';
+import { log360Api } from '../api/integrations';
+import type { Log360Summary } from '../api/integrations';
+import Log360ScoreCard, { type Log360ScoreCardState } from '../components/Log360ScoreCard';
+import { isDemoMode } from '../config/env';
+import { useAuthStore } from '../store/useAuthStore';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
+
+const demoLog360Summary: Log360Summary = {
+  configured: true,
+  ok: true,
+  productVersion: 'Demo 1.0.0',
+  fetchedAt: new Date().toISOString(),
+  sources: {
+    total: 12,
+    online: 10,
+    offline: 1,
+    unknown: 1,
+    samples: [],
+  },
+  alerts: {
+    total: 26,
+    open: 8,
+    closed: 18,
+    bySeverity: {
+      low: 5,
+      medium: 9,
+      high: 7,
+      critical: 5,
+    },
+    samples: [],
+  },
+  retention: {
+    retentionDays: 180,
+    archiveEnabled: true,
+  },
+  score: {
+    overall: 78,
+    breakdown: {
+      health: { score: 82, weight: 20, reason: 'Connection and API checks are mostly stable.' },
+      coverage: { score: 75, weight: 20, reason: 'Some monitored sources remain offline.' },
+      detection: { score: 80, weight: 20, reason: 'Alert detection is active across key sources.' },
+      response: { score: 72, weight: 20, reason: 'Open alert backlog should be reduced.' },
+      retention: { score: 81, weight: 20, reason: 'Retention policy is configured with archive enabled.' },
+    },
+    band: 'attention',
+  },
+  errors: [],
+};
 
 function toast(msg: string) {
   // Simple toast using alert for MVP
@@ -24,13 +72,19 @@ function toast(msg: string) {
 
 export default function DashboardPage() {
   const { selectedFrameworkId, setSelectedFrameworkId } = useAppStore();
+  const user = useAuthStore((state) => state.user);
   const [showFwDropdown, setShowFwDropdown] = useState(false);
   const [exportingReport, setExportingReport] = useState<'executive' | 'auditor' | null>(null);
+  const [log360CardState, setLog360CardState] = useState<Log360ScoreCardState>('loading');
+  const [log360Summary, setLog360Summary] = useState<Log360Summary | undefined>(undefined);
+  const [log360Error, setLog360Error] = useState('');
 
   const scoreData = getScoreData(selectedFrameworkId);
   const framework = frameworks.find((f) => f.id === selectedFrameworkId);
   const { connections } = useAppStore();
   const anyConnected = connections.log360.connected || connections.ad360.connected;
+  const demoMode = isDemoMode();
+  const canShowLog360Card = demoMode || user?.role === 'admin';
 
   const pieData = [
     { name: 'Passed', value: scoreData.passed },
@@ -60,6 +114,45 @@ export default function DashboardPage() {
     setExportingReport(null);
     toast('Report downloaded ✓');
   };
+
+  const loadLog360Summary = async () => {
+    if (!canShowLog360Card) return;
+
+    if (demoMode) {
+      setLog360Summary(demoLog360Summary);
+      setLog360Error('');
+      setLog360CardState('ok');
+      return;
+    }
+
+    setLog360CardState('loading');
+    setLog360Error('');
+
+    try {
+      const summary = await log360Api.summary();
+      setLog360Summary(summary);
+
+      if (!summary.configured) {
+        setLog360CardState('not-configured');
+        return;
+      }
+
+      if (!summary.ok) {
+        setLog360CardState('error');
+        setLog360Error(summary.errors[0] ?? 'Log360 is configured but unreachable.');
+        return;
+      }
+
+      setLog360CardState('ok');
+    } catch (err) {
+      setLog360CardState('error');
+      setLog360Error(err instanceof ApiError ? err.message : 'Failed to fetch Log360 score.');
+    }
+  };
+
+  useEffect(() => {
+    void loadLog360Summary();
+  }, [canShowLog360Card, demoMode]);
 
   return (
     <div>
@@ -137,6 +230,19 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+
+      {canShowLog360Card ? (
+        <div className="mb-6 ml-auto w-full max-w-md">
+          <Log360ScoreCard
+            state={log360CardState}
+            summary={log360Summary}
+            error={log360Error}
+            onRetry={() => {
+              void loadLog360Summary();
+            }}
+          />
+        </div>
+      ) : null}
 
       {/* Top metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

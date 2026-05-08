@@ -18,6 +18,12 @@ export interface CreateCredentialPayload {
   apiKey: string;
 }
 
+export interface CredentialTestResult {
+  success: boolean;
+  error?: string;
+  testedAt: string;
+}
+
 export const credentialsApi = {
   list(): Promise<CredentialMeta[]> {
     return apiRequest<CredentialMeta[]>('/credentials');
@@ -36,8 +42,8 @@ export const credentialsApi = {
     });
   },
 
-  test(id: string): Promise<CredentialMeta> {
-    return apiRequest<CredentialMeta>(`/credentials/${id}/test`, {
+  test(id: string): Promise<CredentialTestResult> {
+    return apiRequest<CredentialTestResult>(`/credentials/${id}/test`, {
       method: 'POST',
     });
   },
