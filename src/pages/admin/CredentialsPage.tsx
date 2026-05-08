@@ -154,7 +154,7 @@ export default function CredentialsPage() {
       addToast(
         updated.lastTestStatus === 'success'
           ? 'Connection test passed.'
-          : `Connection test failed${updated.lastTestError ? ': ' + updated.lastTestError : '.'}`,
+          : `Connection test failed${updated.lastTestError ? `: ${updated.lastTestError}` : '.'}`,
         updated.lastTestStatus === 'success' ? 'success' : 'error',
       );
     } catch (err) {
