@@ -149,13 +149,24 @@ export default function CredentialsPage() {
   const handleTest = async (id: string) => {
     setTestingIds((prev) => new Set(prev).add(id));
     try {
-      const updated = await credentialsApi.test(id);
-      setCredentials((prev) => prev.map((c) => (c.id === id ? updated : c)));
+      const result = await credentialsApi.test(id);
+      setCredentials((prev) =>
+        prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                lastTestAt: result.testedAt,
+                lastTestStatus: result.success ? 'success' : 'failure',
+                lastTestError: result.error ?? null,
+              }
+            : c,
+        ),
+      );
       addToast(
-        updated.lastTestStatus === 'success'
+        result.success
           ? 'Connection test passed.'
-          : `Connection test failed${updated.lastTestError ? `: ${updated.lastTestError}` : '.'}`,
-        updated.lastTestStatus === 'success' ? 'success' : 'error',
+          : `Connection test failed${result.error ? `: ${result.error}` : '.'}`,
+        result.success ? 'success' : 'error',
       );
     } catch (err) {
       addToast(err instanceof ApiError ? err.message : 'Test failed.', 'error');
