@@ -196,7 +196,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-slate-900">Compliance Dashboard</h1>
           <p className="text-slate-500 mt-1">
             {connections.log360.connected
-              ? `Connection: 🟢 Connected to Log360 @ ${connections.log360.serverUrl}`
+              ? `Connection: Connected to Log360 @ ${connections.log360.serverUrl}`
               : 'Mock assessment data — connect your tools for live data.'}
           </p>
           {liveScoring ? (
