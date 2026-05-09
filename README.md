@@ -131,6 +131,7 @@ Production deployment must use one of:
 2. A thin proxy layer (example stub included at `api/proxy.ts` for serverless-style deployment).
 
 > Security note: storing raw bearer tokens in browser storage is MVP-only. Use a secure secrets vault/proxy in production.
+> Proxy security note: set `LOG360_PROXY_ALLOWLIST` (comma-separated `host:port`) so proxy requests are restricted to approved Log360 targets.
 
 ---
 
