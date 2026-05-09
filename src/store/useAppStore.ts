@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WizardAnswers, ConnectionState } from '../types';
+import type { Evidence } from '../services/evidenceCollector';
+
+export type EvidenceErrorKey = keyof Evidence['errors'];
 
 interface AppState {
   // Wizard
@@ -21,6 +24,15 @@ interface AppState {
   };
   updateConnection: (product: 'log360' | 'ad360', state: Partial<ConnectionState>) => void;
   disconnectProduct: (product: 'log360' | 'ad360') => void;
+
+  // Log360 evidence cache
+  log360Evidence: Evidence | null;
+  evidenceLoading: Partial<Record<EvidenceErrorKey | 'all', boolean>>;
+  evidenceErrors: Partial<Record<EvidenceErrorKey, string>>;
+  setLog360Evidence: (evidence: Evidence | null) => void;
+  setEvidenceLoading: (key: EvidenceErrorKey | 'all', loading: boolean) => void;
+  setEvidenceError: (key: EvidenceErrorKey, error?: string) => void;
+  clearEvidenceErrors: () => void;
 }
 
 const defaultWizardAnswers: WizardAnswers = {
@@ -38,9 +50,13 @@ const defaultWizardAnswers: WizardAnswers = {
 const defaultConnectionState: ConnectionState = {
   connected: false,
   serverUrl: '',
-  apiKey: '',
+  token: '',
+  useProxy: false,
+  connectedAt: null,
   lastSync: null,
   testing: false,
+  lastConnectionLatencyMs: undefined,
+  lastError: null,
 };
 
 export const useAppStore = create<AppState>()(
@@ -81,7 +97,37 @@ export const useAppStore = create<AppState>()(
             ...prev.connections,
             [product]: { ...defaultConnectionState },
           },
+          ...(product === 'log360'
+            ? {
+                log360Evidence: null,
+                evidenceErrors: {},
+                evidenceLoading: {},
+              }
+            : {}),
         })),
+
+      log360Evidence: null,
+      evidenceLoading: {},
+      evidenceErrors: {},
+      setLog360Evidence: (log360Evidence) => set({ log360Evidence }),
+      setEvidenceLoading: (key, loading) =>
+        set((prev) => ({
+          evidenceLoading: {
+            ...prev.evidenceLoading,
+            [key]: loading,
+          },
+        })),
+      setEvidenceError: (key, error) =>
+        set((prev) => {
+          const nextErrors = { ...prev.evidenceErrors };
+          if (!error) {
+            delete nextErrors[key];
+          } else {
+            nextErrors[key] = error;
+          }
+          return { evidenceErrors: nextErrors };
+        }),
+      clearEvidenceErrors: () => set({ evidenceErrors: {} }),
     }),
     {
       name: 'complianceiq-store',

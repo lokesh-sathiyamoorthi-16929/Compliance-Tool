@@ -111,6 +111,30 @@ The frontend reads `VITE_API_BASE_URL` (default example: `http://localhost:3001`
 
 ---
 
+## 🔐 Log360 CORS / Proxy Notes
+
+When connecting directly from browser to customer-hosted Log360, CORS may block requests.
+
+- **Direct mode (default):** calls Log360 API directly from the browser.
+- **Proxy mode:** enable **Use proxy** in the Connections page. The client sends requests to:
+  - `/api/proxy?target=<encoded-log360-url>`
+
+For local development, Vite includes `/log360-proxy/*` forwarding controlled by:
+
+```bash
+VITE_LOG360_DEV_TARGET=https://your-log360-host:8400
+```
+
+Production deployment must use one of:
+
+1. Log360 CORS allowlist includes the ComplianceIQ origin, or
+2. A thin proxy layer (example stub included at `api/proxy.ts` for serverless-style deployment).
+
+> Security note: storing raw bearer tokens in browser storage is MVP-only. Use a secure secrets vault/proxy in production.
+> Proxy security note: set `LOG360_PROXY_ALLOWLIST` (comma-separated `host:port`) so proxy requests are restricted to approved Log360 targets.
+
+---
+
 ## 🚀 First Run
 
 After the backend is up and migrated, log in with:
