@@ -108,9 +108,13 @@ export interface WizardAnswers {
 export interface ConnectionState {
   connected: boolean;
   serverUrl: string;
-  apiKey: string;
+  token: string;
+  useProxy: boolean;
+  connectedAt: string | null;
   lastSync: string | null;
   testing: boolean;
+  lastConnectionLatencyMs?: number;
+  lastError?: string | null;
 }
 
 export type MaturityTier = {

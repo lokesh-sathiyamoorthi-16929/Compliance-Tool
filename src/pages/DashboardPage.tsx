@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -20,6 +20,8 @@ import type { Log360Summary } from '../api/integrations';
 import Log360ScoreCard, { type Log360ScoreCardState } from '../components/Log360ScoreCard';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
+import { runControlChecks } from '../engine/controlChecks';
+import { scoreFramework } from '../engine/scoringEngine';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -79,9 +81,41 @@ export default function DashboardPage() {
   const [log360Summary, setLog360Summary] = useState<Log360Summary | undefined>(undefined);
   const [log360Error, setLog360Error] = useState('');
 
-  const scoreData = getScoreData(selectedFrameworkId);
+  const { connections, log360Evidence } = useAppStore();
+  const liveScoring = useMemo(() => {
+    if (!log360Evidence || !connections.log360.connected) return null;
+    if (selectedFrameworkId !== 'hipaa' && selectedFrameworkId !== 'pcidss') return null;
+    const checks = runControlChecks(selectedFrameworkId, log360Evidence);
+    return scoreFramework(checks, log360Evidence);
+  }, [connections.log360.connected, log360Evidence, selectedFrameworkId]);
+
+  const scoreData = useMemo(() => {
+    if (!liveScoring) {
+      return getScoreData(selectedFrameworkId);
+    }
+
+    const passed = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'pass').length;
+    const failed = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'fail').length;
+    const partial = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'partial').length;
+    const notApplicable = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'not_applicable').length;
+
+    return {
+      frameworkId: selectedFrameworkId,
+      overallScore: liveScoring.frameworkScore,
+      trend: getScoreData(selectedFrameworkId).trend,
+      familyScores: liveScoring.familyScores.map((score) => ({
+        family: score.family,
+        score: score.score,
+        controlCount: score.checkCount,
+      })),
+      passed,
+      failed,
+      partial,
+      notApplicable,
+      remediationActions: getScoreData(selectedFrameworkId).remediationActions,
+    };
+  }, [liveScoring, selectedFrameworkId]);
   const framework = frameworks.find((f) => f.id === selectedFrameworkId);
-  const { connections } = useAppStore();
   const anyConnected = connections.log360.connected || connections.ad360.connected;
   const demoMode = isDemoMode();
   const canShowLog360Card = demoMode || user?.role === 'admin';
@@ -160,7 +194,16 @@ export default function DashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Compliance Dashboard</h1>
-          <p className="text-slate-500 mt-1">Mock assessment data — connect your tools for live data.</p>
+          <p className="text-slate-500 mt-1">
+            {connections.log360.connected
+              ? `Connection: 🟢 Connected to Log360 @ ${connections.log360.serverUrl}`
+              : 'Mock assessment data — connect your tools for live data.'}
+          </p>
+          {liveScoring ? (
+            <p className="text-xs text-slate-500 mt-1">
+              {liveScoring.pendingManualCount} controls pending manual review · evidence collected {new Date(liveScoring.lastEvidenceTimestamp).toLocaleString()}
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-3">
           {/* Framework selector */}
