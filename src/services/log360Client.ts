@@ -360,7 +360,7 @@ export class Log360Client {
 
   async getAlertProfiles(): Promise<AlertProfile[]> {
     const response = await this.request<AlertProfilesResponse>('GET', '/api/v2/alerts/profile');
-    return extractList<AlertProfile>((response as { response?: unknown }).response ?? response);
+    return extractList<AlertProfile>(response.response ?? response);
   }
 
   async testConnection(): Promise<TestConnectionResult> {
