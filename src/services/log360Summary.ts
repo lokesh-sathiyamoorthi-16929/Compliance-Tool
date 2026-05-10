@@ -19,6 +19,8 @@ export interface Log360ScoreSummary {
   band: 'compliant' | 'attention' | 'at-risk' | null;
 }
 
+const CORE_HEALTH_ENDPOINT_KEYS = ['logSources', 'agents', 'reportProfiles', 'incidents', 'alerts'] as const;
+
 function endpointFailureMetric(
   key: Log360Metric['key'],
   label: string,
@@ -83,7 +85,7 @@ export function summarizeLog360Evidence(evidence: Evidence | null): Log360ScoreS
     };
   }
 
-  const coreEndpoints = evidence.diagnostics.filter((entry) => ['logSources', 'agents', 'reportProfiles', 'incidents', 'alerts'].includes(entry.key));
+  const coreEndpoints = evidence.diagnostics.filter((entry) => CORE_HEALTH_ENDPOINT_KEYS.includes(entry.key as (typeof CORE_HEALTH_ENDPOINT_KEYS)[number]));
   const successfulCore = coreEndpoints.filter((entry) => entry.ok).length;
   const healthMetric: Log360Metric = {
     key: 'health',

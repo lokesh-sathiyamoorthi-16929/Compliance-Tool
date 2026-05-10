@@ -213,8 +213,8 @@ export default function ConnectionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {log360Evidence.diagnostics.map((entry, index) => (
-                        <tr key={`${entry.key}:${entry.path}:${index}`} className="border-t border-slate-200">
+                      {log360Evidence.diagnostics.map((entry) => (
+                        <tr key={`${entry.key}:${entry.method}:${entry.path}`} className="border-t border-slate-200">
                           <td className="px-3 py-2 font-mono text-xs">{entry.method} {entry.path}</td>
                           <td className="px-3 py-2">{entry.statusText}</td>
                           <td className="px-3 py-2">{entry.latencyMs}ms</td>
