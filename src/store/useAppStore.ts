@@ -50,8 +50,6 @@ const defaultWizardAnswers: WizardAnswers = {
 const defaultConnectionState: ConnectionState = {
   connected: false,
   serverUrl: '',
-  token: '',
-  useProxy: false,
   connectedAt: null,
   lastSync: null,
   testing: false,

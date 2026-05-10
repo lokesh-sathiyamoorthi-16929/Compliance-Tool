@@ -1,99 +1,147 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Log360Client } from './log360Client';
+import { Log360Client, Log360ClientError } from './log360Client';
+import * as client from '../api/client';
+
+vi.mock('../api/client', async (importOriginal) => {
+  const original = await importOriginal<typeof client>();
+  return {
+    ...original,
+    apiRequest: vi.fn(),
+  };
+});
+
+const apiRequestMock = vi.mocked(client.apiRequest);
 
 describe('Log360Client', () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
-  it('sends auth and content-type headers for API requests', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ response: { log_fields: [{ field_name: 'host' }] } }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+  it('routes requests through backend proxy path', async () => {
+    apiRequestMock.mockResolvedValue({ response: { log_fields: [{ field_name: 'host' }] } });
+
+    const log360 = new Log360Client();
+    await log360.getLogFields();
+
+    expect(apiRequestMock).toHaveBeenCalledTimes(1);
+    const [path] = apiRequestMock.mock.calls[0];
+    expect(path).toBe('/integrations/log360/proxy/api/v2/meta/log-fields');
+  });
+
+  it('maps LOG360_NOT_CONFIGURED to NOT_CONFIGURED error', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_NOT_CONFIGURED', 'No credentials configured.', 409),
     );
 
-    const client = new Log360Client({
-      baseUrl: 'https://log360.example.com',
-      token: 'token-123',
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'NOT_CONFIGURED',
+      message: 'No Log360 connection saved. Configure it on the Connections page.',
     });
-
-    await client.getLogFields();
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, requestInit] = fetchMock.mock.calls[0];
-    expect(url).toBe('https://log360.example.com/api/v2/meta/log-fields');
-    expect((requestInit?.headers as Record<string, string>).Authorization).toBe('Bearer token-123');
-    expect((requestInit?.headers as Record<string, string>)['Content-Type']).toBe('application/json');
   });
 
-  it('uses proxy url when useProxy is enabled', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ response: [] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+  it('maps LOG360_UNREACHABLE to NETWORK_ERROR', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_UNREACHABLE', 'Cannot reach Log360.', 502),
     );
 
-    const client = new Log360Client({
-      baseUrl: 'https://log360.example.com',
-      token: 'token-123',
-      useProxy: true,
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'NETWORK_ERROR',
+      message: 'Backend could not reach Log360 server (network error).',
     });
-
-    await client.getLogSources();
-
-    const [url] = fetchMock.mock.calls[0];
-    expect(String(url)).toContain('/api/proxy?target=');
-    expect(String(url)).toContain(encodeURIComponent('https://log360.example.com/api/v2/log-sources'));
   });
 
-  it('retries once on 5xx and succeeds', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch')
-      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { detail: 'server down' } }), { status: 500 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ response: [] }), { status: 200 }));
-
-    const client = new Log360Client({
-      baseUrl: 'https://log360.example.com',
-      token: 'token-123',
-    });
-
-    const sources = await client.getLogSources();
-
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(sources).toEqual([]);
-  });
-
-  it('maps unauthorized in testConnection to friendly message', async () => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ code: '07001113', title: 'Unauthorized' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' },
-      }),
+  it('maps LOG360_TIMEOUT to TIMEOUT error', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_TIMEOUT', 'Log360 timed out.', 504),
     );
 
-    const client = new Log360Client({
-      baseUrl: 'https://log360.example.com',
-      token: 'bad-token',
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'TIMEOUT',
+      message: 'Log360 did not respond within 30 seconds.',
     });
-
-    const result = await client.testConnection();
-
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('Invalid or expired token');
   });
 
-  it('throws typed error on network failure', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+  it('maps 401 from backend to UNAUTHORIZED', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('UNAUTHORIZED', 'Session expired.', 401),
+    );
 
-    const client = new Log360Client({
-      baseUrl: 'https://log360.example.com',
-      token: 'token-123',
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'UNAUTHORIZED',
+      message: 'Your ComplianceIQ session expired. Please log in again.',
     });
+  });
 
-    await expect(client.getLogFields()).rejects.toMatchObject({
+  it('maps NETWORK_UNREACHABLE to NETWORK_ERROR', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NETWORK_UNREACHABLE', 'Backend is unreachable.'),
+    );
+
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
       kind: 'NETWORK_ERROR',
     });
+  });
+
+  it('passes through upstream Log360 5xx as SERVER_ERROR', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('UPSTREAM_ERROR', 'Internal server error.', 500),
+    );
+
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'SERVER_ERROR',
+      status: 500,
+    });
+  });
+
+  it('testConnection returns success=true when health ok', async () => {
+    apiRequestMock.mockResolvedValue({ configured: true, ok: true, latencyMs: 42 });
+
+    const log360 = new Log360Client();
+    const result = await log360.testConnection();
+
+    expect(result.success).toBe(true);
+    expect(result.latencyMs).toBe(42);
+    expect(apiRequestMock).toHaveBeenCalledWith('/integrations/log360/health');
+  });
+
+  it('testConnection returns success=false when health not ok', async () => {
+    apiRequestMock.mockResolvedValue({ configured: true, ok: false, latencyMs: 100, error: 'Token rejected' });
+
+    const log360 = new Log360Client();
+    const result = await log360.testConnection();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('Token rejected');
+  });
+
+  it('testConnection returns success=false when apiRequest throws', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_NOT_CONFIGURED', 'No credentials.', 409),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.testConnection();
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('No credentials.');
+  });
+
+  it('Log360ClientError preserves kind, status, and code', () => {
+    const err = new Log360ClientError('NOT_CONFIGURED', 'msg', 409, 'LOG360_NOT_CONFIGURED');
+    expect(err.kind).toBe('NOT_CONFIGURED');
+    expect(err.status).toBe(409);
+    expect(err.code).toBe('LOG360_NOT_CONFIGURED');
   });
 });

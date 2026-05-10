@@ -108,8 +108,6 @@ export interface WizardAnswers {
 export interface ConnectionState {
   connected: boolean;
   serverUrl: string;
-  token: string;
-  useProxy: boolean;
   connectedAt: string | null;
   lastSync: string | null;
   testing: boolean;

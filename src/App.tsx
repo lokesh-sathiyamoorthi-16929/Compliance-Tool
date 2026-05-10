@@ -27,6 +27,10 @@ export default function App() {
   );
 
   useEffect(() => {
+    // One-shot migration: remove the old localStorage key that stored the Log360 token
+    // in the browser (MVP-era, now replaced by server-side vault).
+    localStorage.removeItem('complianceiq-log360-connection');
+
     void useAuthStore.getState().hydrate();
   }, []);
 
