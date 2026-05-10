@@ -174,6 +174,18 @@ export interface AlertsResponse {
   [key: string]: unknown;
 }
 
+export interface AlertProfile {
+  profile_id?: string;
+  profile_name?: string;
+  severity?: string;
+  [key: string]: unknown;
+}
+
+export interface AlertProfilesResponse {
+  response?: AlertProfile[] | Record<string, unknown>;
+  [key: string]: unknown;
+}
+
 export interface IncidentListParams {
   response_type?: 'client' | 'server';
 }
@@ -276,7 +288,7 @@ function mapProxyError(error: unknown, logicalPath: string): Log360ClientError {
  */
 export class Log360Client {
   async getLogFields(): Promise<LogField[]> {
-    const response = await this.request<LogFieldsResponse>('POST', '/api/v2/meta/log-fields', {});
+    const response = await this.request<LogFieldsResponse>('GET', '/api/v2/meta/log-fields');
     return extractList<LogField>(response.response?.log_fields ?? response.response ?? response);
   }
 
@@ -342,7 +354,13 @@ export class Log360Client {
   }
 
   async getAlerts(): Promise<AlertsResponse> {
-    return this.request<AlertsResponse>('GET', '/api/v2/alerts');
+    // TODO: filter shape (severity, time range) can be expanded later; empty body returns unfiltered list per ManageEngine pattern
+    return this.request<AlertsResponse>('POST', '/api/v2/alerts', {});
+  }
+
+  async getAlertProfiles(): Promise<AlertProfile[]> {
+    const response = await this.request<AlertProfilesResponse>('GET', '/api/v2/alerts/profile');
+    return extractList<AlertProfile>((response as { response?: unknown }).response ?? response);
   }
 
   async testConnection(): Promise<TestConnectionResult> {
