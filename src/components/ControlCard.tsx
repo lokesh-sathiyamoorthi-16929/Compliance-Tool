@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, ExternalLink, CheckCircle } from 'lucide-react';
 import { Control } from '../types';
@@ -27,7 +27,7 @@ export default function ControlCard({ control }: Props) {
     [control.frameworkId],
   );
 
-  const deriveControlState = (evidence: Evidence) => {
+  const deriveControlState = useCallback((evidence: Evidence) => {
     if (!scoringFramework) return null;
     const checks = runControlChecks(scoringFramework, evidence).filter((check) => check.controlId === control.id);
     if (checks.length === 0) return null;
@@ -35,7 +35,7 @@ export default function ControlCard({ control }: Props) {
     if (checks.some((check) => check.result.status === 'partial' || check.result.status === 'evidence_pending')) return 'partial';
     if (checks.some((check) => check.result.status === 'pass')) return 'pass';
     return null;
-  };
+  }, [control.id, scoringFramework]);
 
   useEffect(() => {
     if (!connected || !log360Evidence) {
@@ -43,7 +43,7 @@ export default function ControlCard({ control }: Props) {
       return;
     }
     setScoreState(deriveControlState(log360Evidence));
-  }, [connected, control.id, log360Evidence, scoringFramework]);
+  }, [connected, deriveControlState, log360Evidence]);
 
   const handleRescore = () => {
     if (!connected || !log360Evidence) return;

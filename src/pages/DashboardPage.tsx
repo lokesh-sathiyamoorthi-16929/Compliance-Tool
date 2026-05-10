@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,7 +21,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { runControlChecks } from '../engine/controlChecks';
 import { scoreFramework } from '../engine/scoringEngine';
 import { useLog360Evidence } from '../hooks/useLog360Evidence';
-import type { MockScoreData } from '../types';
+import type { MockScoreData, RemediationAction } from '../types';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -33,7 +33,7 @@ function toast(msg: string) {
 function buildLiveRemediationActions(
   frameworkId: string,
   liveScoring: ReturnType<typeof scoreFramework> | null,
-): MockScoreData['remediationActions'] {
+): RemediationAction[] {
   if (!liveScoring) return [];
   const controls = getControlsByFrameworkId(frameworkId);
   const controlsById = new Map(controls.map((control) => [control.id, control]));
@@ -151,7 +151,7 @@ export default function DashboardPage() {
     toast('Report downloaded ✓');
   };
 
-  const renderRawDataInspector = (widgetId: string, payload: unknown) => (
+  const renderRawDataInspector = useCallback((widgetId: string, payload: unknown) => (
     <div className="mt-3">
       <button
         type="button"
@@ -166,7 +166,7 @@ export default function DashboardPage() {
         </pre>
       ) : null}
     </div>
-  );
+  ), [openRawWidget]);
 
   return (
     <div>
