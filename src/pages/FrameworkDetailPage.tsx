@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Plug,
@@ -24,6 +24,8 @@ import { getProductById } from '../data/manageEngineProducts';
 import ControlCard from '../components/ControlCard';
 import ValidationBadge from '../components/ValidationBadge';
 import NotFoundPage from './NotFoundPage';
+import { useAppStore } from '../store/useAppStore';
+import { scoreFramework } from '../engine/scoring';
 
 const PRODUCT_ICONS: Record<string, typeof Package2> = {
   log360: ScrollText,
@@ -71,8 +73,10 @@ const TOOLTIP_WIDTH_PX = 264;
 
 export default function FrameworkDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const framework = getFrameworkById(id ?? '');
   const controls = getControlsByFrameworkId(id ?? '');
+  const { log360Evidence, connections, attestations } = useAppStore();
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [scopeFilter, setScopeFilter] = useState<string>('all');
@@ -84,6 +88,12 @@ export default function FrameworkDetailPage() {
   const controlsRef = useRef<HTMLDivElement>(null);
 
   if (!framework) return <NotFoundPage />;
+
+  const frameworkScore =
+    log360Evidence && connections.log360.connected
+      ? scoreFramework(framework.id, log360Evidence, { attestations, rubricOverride: framework.rubric })
+      : null;
+  const controlScoreById = new Map((frameworkScore?.controls ?? []).map((score) => [score.controlId, score]));
 
   const categories = ['all', ...Array.from(new Set(controls.map((c) => c.category)))];
 
@@ -353,6 +363,18 @@ export default function FrameworkDetailPage() {
                   <p className="text-xs text-slate-500">Avg Control Coverage</p>
                   <p className="text-2xl font-bold text-slate-900">{avgCoverage}%</p>
                 </div>
+                {frameworkScore ? (
+                  <>
+                    <div>
+                      <p className="text-xs text-slate-500">Rubric</p>
+                      <p className="text-2xl font-bold text-slate-900">{frameworkScore.rubric.toUpperCase()}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">NIST Tier</p>
+                      <p className="text-2xl font-bold text-slate-900">{frameworkScore.nistTier}</p>
+                    </div>
+                  </>
+                ) : null}
               </div>
             </div>
             <Link to="/connections" className="btn-primary shrink-0">
@@ -388,6 +410,38 @@ export default function FrameworkDetailPage() {
             </p>
           </div>
         )}
+
+        {frameworkScore ? (
+          <div className="card p-5">
+            <h3 className="text-sm font-semibold text-slate-700">Maturity Heatmap</h3>
+            <p className="mt-1 text-xs text-slate-500">Overall: {frameworkScore.overall} · Band: {frameworkScore.band}</p>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-slate-500">
+                    <th className="px-2 py-1 text-left">Control</th>
+                    {(frameworkScore.rubric === 'prisma' ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5]).map((level) => (
+                      <th key={level} className="px-2 py-1 text-center">L{level}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {frameworkScore.controls.map((control) => (
+                    <tr key={control.controlId} className="border-t border-slate-100">
+                      <td className="px-2 py-1 font-medium text-slate-700">{control.controlId}</td>
+                      {control.levelBreakdown.map((level) => (
+                        <td key={level.level} className="px-2 py-1">
+                          <div className={`mx-auto h-5 w-5 rounded ${level.achieved ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {frameworkScore.partialBasisNote ? <p className="mt-2 text-xs text-slate-500">{frameworkScore.partialBasisNote}</p> : null}
+          </div>
+        ) : null}
 
         {activeProduct && (
           <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 transition-opacity duration-200">
@@ -436,7 +490,12 @@ export default function FrameworkDetailPage() {
             <div className="space-y-3">
               <p className="text-sm text-slate-500">Showing {filtered.length} of {controls.length} controls</p>
               {filtered.map((control) => (
-                <ControlCard key={control.id} control={control} />
+                <ControlCard
+                  key={control.id}
+                  control={control}
+                  score={controlScoreById.get(control.id)}
+                  onAttest={() => navigate('/attestations')}
+                />
               ))}
             </div>
           )}

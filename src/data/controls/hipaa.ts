@@ -697,3 +697,13 @@ export const hipaaControls: Control[] = [
     inItScope: true,
   },
 ];
+
+hipaaControls.forEach((control) => {
+  const family = control.family.toLowerCase();
+  control.safeguard = family.includes('administrative')
+    ? 'administrative'
+    : family.includes('physical')
+      ? 'physical'
+      : 'technical';
+  control.requirementType = control.required && !control.addressable ? 'required' : 'addressable';
+});

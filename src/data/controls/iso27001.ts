@@ -176,3 +176,19 @@ export const iso27001Controls: Control[] = [
     inItScope: true,
   },
 ];
+
+iso27001Controls.forEach((control) => {
+  if (control.id.startsWith('ISO-A.5')) {
+    control.theme = 'organizational';
+    return;
+  }
+  if (control.id.startsWith('ISO-A.6')) {
+    control.theme = 'people';
+    return;
+  }
+  if (control.id.startsWith('ISO-A.7')) {
+    control.theme = 'physical';
+    return;
+  }
+  control.theme = 'technological';
+});

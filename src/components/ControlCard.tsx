@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, ExternalLink, CheckCircle } from 'lucide-react';
 import { Control } from '../types';
 import { getProductById } from '../data/manageEngineProducts';
+import type { ControlScore } from '../engine/scoring';
 
 interface Props {
   control: Control;
+  score?: ControlScore;
+  onAttest?: (control: Control) => void;
 }
 
-export default function ControlCard({ control }: Props) {
+export default function ControlCard({ control, score, onAttest }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const categoryColors: Record<string, string> = {
@@ -49,6 +52,11 @@ export default function ControlCard({ control }: Props) {
                   Out of IT Scope
                 </span>
               )}
+              {score ? (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  L{score.achievedLevel} · {score.rubric.toUpperCase()}
+                </span>
+              ) : null}
             </div>
             <h4 className="font-semibold text-slate-900">{control.title}</h4>
             <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{control.description}</p>
@@ -79,6 +87,18 @@ export default function ControlCard({ control }: Props) {
               <p className="text-xs text-slate-500">Weight</p>
               <p className="font-bold text-slate-900">{control.weight}/5</p>
             </div>
+            {score && onAttest ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onAttest(control);
+                }}
+                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+              >
+                Attest
+              </button>
+            ) : null}
             {expanded ? (
               <ChevronUp className="w-5 h-5 text-slate-400" />
             ) : (
@@ -91,6 +111,20 @@ export default function ControlCard({ control }: Props) {
       {expanded && (
         <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50">
           {/* Technical Requirements */}
+          {score ? (
+            <div>
+              <h5 className="text-sm font-semibold text-slate-700 mb-2">Maturity Breakdown</h5>
+              <ul className="space-y-1">
+                {score.levelBreakdown.map((item) => (
+                  <li key={item.level} className="text-xs text-slate-600">
+                    <strong>L{item.level}</strong> · {item.achieved ? 'Achieved' : 'Missing'} · {item.reason}
+                  </li>
+                ))}
+              </ul>
+              {score.partialBasisNote ? <p className="mt-2 text-xs text-amber-700">{score.partialBasisNote}</p> : null}
+            </div>
+          ) : null}
+
           <div>
             <h5 className="text-sm font-semibold text-slate-700 mb-2">Technical Requirements</h5>
             <ul className="space-y-1">

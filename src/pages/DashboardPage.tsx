@@ -17,8 +17,7 @@ import { exportExecutivePdf, exportAuditorPdf } from '../utils/pdfExport';
 import Log360ScoreCard, { type Log360ScoreCardState } from '../components/Log360ScoreCard';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
-import { runControlChecks } from '../engine/controlChecks';
-import { scoreFramework } from '../engine/scoringEngine';
+import { scoreFramework } from '../engine/scoring';
 import { useLog360Evidence } from '../hooks/useLog360Evidence';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
@@ -33,33 +32,32 @@ export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const [showFwDropdown, setShowFwDropdown] = useState(false);
   const [exportingReport, setExportingReport] = useState<'executive' | 'auditor' | null>(null);
+  const [showScoreHelp, setShowScoreHelp] = useState(false);
 
-  const { connections, log360Evidence } = useAppStore();
+  const { connections, log360Evidence, attestations } = useAppStore();
   const liveScoring = useMemo(() => {
     if (!log360Evidence || !connections.log360.connected) return null;
-    if (selectedFrameworkId !== 'hipaa' && selectedFrameworkId !== 'pcidss') return null;
-    const checks = runControlChecks(selectedFrameworkId, log360Evidence);
-    return scoreFramework(checks, log360Evidence);
-  }, [connections.log360.connected, log360Evidence, selectedFrameworkId]);
+    return scoreFramework(selectedFrameworkId, log360Evidence, { attestations });
+  }, [attestations, connections.log360.connected, log360Evidence, selectedFrameworkId]);
 
   const scoreData = useMemo(() => {
     if (!liveScoring) {
       return getScoreData(selectedFrameworkId);
     }
 
-    const passed = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'pass').length;
-    const failed = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'fail').length;
-    const partial = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'partial').length;
-    const notApplicable = liveScoring.controlResults.flatMap((result) => result.checks).filter((check) => check.result.status === 'not_applicable').length;
+    const passed = liveScoring.controls.filter((control) => control.normalizedScore >= 80).length;
+    const failed = liveScoring.controls.filter((control) => control.normalizedScore < 40).length;
+    const partial = liveScoring.controls.filter((control) => control.normalizedScore >= 40 && control.normalizedScore < 80).length;
+    const notApplicable = 0;
 
     return {
       frameworkId: selectedFrameworkId,
-      overallScore: liveScoring.frameworkScore,
+      overallScore: liveScoring.overall,
       trend: getScoreData(selectedFrameworkId).trend,
-      familyScores: liveScoring.familyScores.map((score) => ({
-        family: score.family,
+      familyScores: (liveScoring.themes ?? []).map((score) => ({
+        family: score.name,
         score: score.score,
-        controlCount: score.checkCount,
+        controlCount: liveScoring.controls.filter((control) => control.control?.theme === score.id || control.control?.safeguard === score.id).length,
       })),
       passed,
       failed,
@@ -127,7 +125,7 @@ export default function DashboardPage() {
           </p>
           {liveScoring ? (
             <p className="text-xs text-slate-500 mt-1">
-              {liveScoring.pendingManualCount} controls pending manual review · evidence collected {new Date(liveScoring.lastEvidenceTimestamp).toLocaleString()}
+              Rubric {liveScoring.rubric.toUpperCase()} · NIST CSF Tier {liveScoring.nistTier} · Generated {new Date(liveScoring.generatedAt).toLocaleString()}
             </p>
           ) : null}
         </div>
@@ -225,9 +223,26 @@ export default function DashboardPage() {
             </strong>
             . Closing the top gaps below would advance your tier and reduce audit risk.
           </div>
+          {liveScoring ? (
+            <div className="mb-2 flex items-center gap-2 text-xs">
+              <span className="rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 font-semibold text-slate-700">
+                {liveScoring.rubric.toUpperCase()}
+              </span>
+              <span className="text-slate-600">NIST Tier {liveScoring.nistTier}</span>
+            </div>
+          ) : null}
           <ScoreGauge score={scoreData.overallScore} size={200} />
           <div className="mt-3 text-center">
             <MaturityBadge score={scoreData.overallScore} size="md" />
+            {liveScoring ? (
+              <button
+                type="button"
+                onClick={() => setShowScoreHelp(true)}
+                className="mt-2 block text-xs font-medium text-blue-600 hover:text-blue-700"
+              >
+                ⓘ How is this calculated?
+              </button>
+            ) : null}
             <div className="flex items-center gap-1 justify-center mt-2 text-green-600">
               <TrendingUp className="w-4 h-4" />
               <span className="text-sm font-semibold">
@@ -348,6 +363,39 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
+
+      {showScoreHelp && liveScoring ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-2xl rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-900">Score methodology</h3>
+            <p className="mt-1 text-sm text-slate-600">Rubric: <strong>{liveScoring.rubric.toUpperCase()}</strong> · Formula: average control maturity score → theme averages → overall score.</p>
+            <p className="mt-1 text-xs text-slate-500">NIST tiers: ≥80 Tier 4, ≥60 Tier 3, ≥40 Tier 2, otherwise Tier 1.</p>
+            <div className="mt-3 max-h-64 overflow-y-auto rounded-lg border border-slate-200">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-3 py-2">Control</th>
+                    <th className="px-3 py-2">Level</th>
+                    <th className="px-3 py-2">Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liveScoring.controls.map((control) => (
+                    <tr key={control.controlId} className="border-t border-slate-100">
+                      <td className="px-3 py-2">{control.controlId}</td>
+                      <td className="px-3 py-2">L{control.achievedLevel}</td>
+                      <td className="px-3 py-2">{control.normalizedScore}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button type="button" onClick={() => setShowScoreHelp(false)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm">Close</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -18,6 +18,7 @@ import CredentialsPage from './pages/admin/CredentialsPage';
 import { useAuthStore } from './store/useAuthStore';
 import { isDemoMode } from './config/env';
 import Log360DetailPage from './pages/integrations/Log360DetailPage';
+import AttestationsPage from './pages/AttestationsPage';
 
 export default function App() {
   const basename = import.meta.env.PROD ? '/Compliance-Tool' : '/';
@@ -62,6 +63,7 @@ export default function App() {
             <Route path="connections" element={<ConnectionsPage />} />
             <Route path="dashboard" element={<DashboardPage />} />
             <Route path="compare" element={<ComparePage />} />
+            <Route path="attestations" element={<AttestationsPage />} />
           </Route>
           <Route element={<ProtectedRoute requireRole="admin" />}>
             <Route path="admin/users" element={<UsersPage />} />

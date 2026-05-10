@@ -28,7 +28,12 @@ export interface Control {
     notes?: string;
   };
   inItScope: boolean;
+  safeguard?: 'administrative' | 'physical' | 'technical';
+  requirementType?: 'required' | 'addressable';
+  theme?: 'organizational' | 'people' | 'physical' | 'technological';
 }
+
+export type FrameworkRubric = 'prisma' | 'cmmi' | 'legacy';
 
 export interface Framework {
   id: string;
@@ -45,6 +50,20 @@ export interface Framework {
   confidenceLevel: 'high' | 'medium' | 'low';
   validationStatus: 'sme_validated' | 'interpreted' | 'auto_generated';
   lastValidated?: string;
+  rubric?: FrameworkRubric;
+  prismaConfig?: {
+    safeguards: Array<{
+      id: 'administrative' | 'physical' | 'technical';
+      controlIds: string[];
+    }>;
+  };
+  cmmiConfig?: {
+    themes: Array<{
+      id: string;
+      name: string;
+      controlIds: string[];
+    }>;
+  };
 }
 
 export interface MEProduct {
@@ -154,4 +173,20 @@ export interface MockScoreData {
   partial: number;
   notApplicable: number;
   remediationActions: RemediationAction[];
+}
+
+export interface AttestationEvidenceFile {
+  name: string;
+  sizeBytes: number;
+  dataUrl: string;
+}
+
+export interface Attestation {
+  id: string;
+  controlId: string;
+  level: number;
+  statement: string;
+  attestedAt: string;
+  expiresAt: string;
+  evidenceFile?: AttestationEvidenceFile;
 }

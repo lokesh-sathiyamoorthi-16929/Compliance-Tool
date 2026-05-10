@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { runControlChecks } from './controlChecks';
 import { scoreFramework } from './scoringEngine';
+import { scoreFramework as scoreFrameworkV2 } from './scoring';
 import type { Evidence } from '../services/evidenceCollector';
 
 const sampleEvidence: Evidence = {
@@ -94,5 +95,22 @@ describe('scoringEngine', () => {
     expect(pendingChecks.length).toBeGreaterThan(0);
     expect(result.frameworkScore).toBeGreaterThan(0);
     expect(result.pendingManualCount).toBe(pendingChecks.length);
+  });
+
+  it('scores HIPAA with prisma rubric and three safeguards in v2', () => {
+    const result = scoreFrameworkV2('hipaa', sampleEvidence);
+    expect(result.rubric).toBe('prisma');
+    expect(result.themes?.length).toBe(3);
+  });
+
+  it('scores ISO 27001 with cmmi rubric and four themes in v2', () => {
+    const result = scoreFrameworkV2('iso27001', sampleEvidence);
+    expect(result.rubric).toBe('cmmi');
+    expect(result.themes?.length).toBe(4);
+  });
+
+  it('keeps PCI DSS on legacy rubric in v2', () => {
+    const result = scoreFrameworkV2('pcidss', sampleEvidence);
+    expect(result.rubric).toBe('legacy');
   });
 });
