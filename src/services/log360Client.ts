@@ -366,19 +366,23 @@ export class Log360Client {
   async testConnection(): Promise<TestConnectionResult> {
     const startedAt = performance.now();
     try {
-      const result = await apiRequest<{ configured: boolean; ok: boolean; latencyMs?: number; error?: string }>(
-        '/integrations/log360/health',
-      );
-      const latencyMs = result.latencyMs ?? Math.round(performance.now() - startedAt);
-      if (!result.ok) {
-        return { success: false, latencyMs, error: result.error ?? 'Log360 health check failed.' };
-      }
-      return { success: true, latencyMs };
+      const fields = await this.getLogFields();
+      return {
+        success: true,
+        latencyMs: Math.round(performance.now() - startedAt),
+        fieldCount: fields.length,
+      };
     } catch (error) {
+      const message =
+        error instanceof Log360ClientError
+          ? error.message
+          : error instanceof ApiError
+            ? error.message
+            : 'Connection test failed.';
       return {
         success: false,
         latencyMs: Math.round(performance.now() - startedAt),
-        error: error instanceof ApiError ? error.message : 'Connection test failed.',
+        error: message,
       };
     }
   }

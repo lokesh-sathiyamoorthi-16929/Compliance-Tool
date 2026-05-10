@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,14 +14,12 @@ import ScoreGauge from '../components/ScoreGauge';
 import MaturityBadge from '../components/MaturityBadge';
 import RemediationItem from '../components/RemediationItem';
 import { exportExecutivePdf, exportAuditorPdf } from '../utils/pdfExport';
-import { ApiError } from '../api/client';
-import { log360Api } from '../api/integrations';
-import type { Log360Summary } from '../api/integrations';
 import Log360ScoreCard, { type Log360ScoreCardState } from '../components/Log360ScoreCard';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
 import { runControlChecks } from '../engine/controlChecks';
 import { scoreFramework } from '../engine/scoringEngine';
+import { useLog360Evidence } from '../hooks/useLog360Evidence';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -35,9 +33,6 @@ export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
   const [showFwDropdown, setShowFwDropdown] = useState(false);
   const [exportingReport, setExportingReport] = useState<'executive' | 'auditor' | null>(null);
-  const [log360CardState, setLog360CardState] = useState<Log360ScoreCardState>('loading');
-  const [log360Summary, setLog360Summary] = useState<Log360Summary | undefined>(undefined);
-  const [log360Error, setLog360Error] = useState('');
 
   const { connections, log360Evidence } = useAppStore();
   const liveScoring = useMemo(() => {
@@ -77,6 +72,18 @@ export default function DashboardPage() {
   const anyConnected = connections.log360.connected || connections.ad360.connected;
   const demoMode = isDemoMode();
   const canShowLog360Card = demoMode || user?.role === 'admin';
+  const { overview: log360Summary, loading: log360Loading, error: log360Error, refresh: refreshLog360Evidence } = useLog360Evidence({
+    autoRefresh: canShowLog360Card && !demoMode,
+  });
+  const log360CardState: Log360ScoreCardState = demoMode
+    ? 'not-configured'
+    : log360Loading
+      ? 'loading'
+      : !log360Summary?.configured
+        ? 'not-configured'
+        : log360Summary
+          ? 'ok'
+          : 'error';
 
   const pieData = [
     { name: 'Passed', value: scoreData.passed },
@@ -106,45 +113,6 @@ export default function DashboardPage() {
     setExportingReport(null);
     toast('Report downloaded ✓');
   };
-
-  const loadLog360Summary = useCallback(async () => {
-    if (!canShowLog360Card) return;
-
-    if (demoMode) {
-      setLog360Summary(undefined);
-      setLog360Error('');
-      setLog360CardState('not-configured');
-      return;
-    }
-
-    setLog360CardState('loading');
-    setLog360Error('');
-
-    try {
-      const summary = await log360Api.summary();
-      setLog360Summary(summary);
-
-      if (!summary.configured) {
-        setLog360CardState('not-configured');
-        return;
-      }
-
-      if (!summary.ok) {
-        setLog360CardState('error');
-        setLog360Error(summary.errors[0] ?? 'Log360 is configured but unreachable.');
-        return;
-      }
-
-      setLog360CardState('ok');
-    } catch (err) {
-      setLog360CardState('error');
-      setLog360Error(err instanceof ApiError ? err.message : 'Failed to fetch Log360 score.');
-    }
-  }, [canShowLog360Card, demoMode]);
-
-  useEffect(() => {
-    void loadLog360Summary();
-  }, [loadLog360Summary]);
 
   return (
     <div>
@@ -236,10 +204,10 @@ export default function DashboardPage() {
         <div className="mb-6 ml-auto w-full max-w-md">
           <Log360ScoreCard
             state={log360CardState}
-            summary={log360Summary}
+            summary={log360Summary ?? undefined}
             error={log360Error}
             onRetry={() => {
-              void loadLog360Summary();
+              void refreshLog360Evidence();
             }}
           />
         </div>

@@ -2,26 +2,17 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import Log360ScoreCard from './Log360ScoreCard';
-import type { Log360Summary } from '../api/integrations';
+import type { Log360Overview } from '../services/log360Overview';
 
-const sampleSummary: Log360Summary = {
+const sampleSummary: Log360Overview = {
   configured: true,
   ok: true,
   fetchedAt: '2026-05-08T00:00:00.000Z',
-  productVersion: '2.0.0',
-  sources: {
-    total: 4,
-    online: 3,
-    offline: 1,
-    unknown: 0,
-    samples: [],
-  },
-  alerts: {
-    total: 10,
-    open: 3,
-    closed: 7,
-    bySeverity: {},
-    samples: [],
+  totals: {
+    logFields: 6,
+    logSources: 4,
+    alerts: 10,
+    alertProfiles: 3,
   },
   score: {
     overall: 82,
@@ -33,6 +24,7 @@ const sampleSummary: Log360Summary = {
       response: { score: 79, weight: 0.25, reason: 'Good' },
     },
   },
+  diagnostics: [],
   errors: [],
 };
 

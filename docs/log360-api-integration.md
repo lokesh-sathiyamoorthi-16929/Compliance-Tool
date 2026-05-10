@@ -26,13 +26,13 @@
        │  ← {configured: true}     │                             │
        │                           │                             │
        │  3. GET /integrations/    │                             │
-       │     log360/health         │                             │
+       │     log360/proxy/api/v2/  │                             │
+       │     meta/log-fields       │                             │
        │ ─────────────────────────>│                             │
        │                           │  GET /api/v2/meta/log-fields│
        │                           │ ───────────────────────────>│
-       │                           │  ← {ok: true, latency: 42} │
-       │  ← {configured:true,      │                             │
-       │      ok:true,latencyMs:42}│                             │
+       │                           │  ← log field list           │
+       │  ← log field list         │                             │
        │                           │                             │
        │  4. GET /integrations/    │                             │
        │     log360/proxy/api/v2/  │                             │
@@ -59,7 +59,6 @@ The Connections page (`src/pages/ConnectionsPage.tsx`) uses `log360CredentialsAp
 | Load status | `GET` | `/integrations/log360/credentials` |
 | Save token | `PUT` | `/integrations/log360/credentials` body: `{baseUrl, authToken}` |
 | Remove | `DELETE` | `/integrations/log360/credentials` |
-| Health check | `GET` | `/integrations/log360/health` |
 
 All requests include the ComplianceIQ JWT in `Authorization: Bearer <jwt>` (injected automatically by `apiRequest`).
 
@@ -73,6 +72,8 @@ Log360 path:   /api/v2/<path>   (as seen by Log360)
 ```
 
 The ComplianceIQ JWT is attached by `apiRequest`. The Log360 auth token is attached server-side by the proxy.
+
+The backend may still expose `/health` and `/summary` for legacy compatibility, but the frontend no longer calls them. All Log360 data on every UI surface comes from `Log360Client` via the backend proxy at `/integrations/log360/proxy/api/v2/...`.
 
 ---
 

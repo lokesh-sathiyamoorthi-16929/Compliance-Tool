@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { cleanup } from '@testing-library/react';
 import ConnectionsPage from './ConnectionsPage';
 import * as integrations from '../api/integrations';
+import { Log360Client } from '../services/log360Client';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import type { User } from '../api/auth';
@@ -26,11 +27,10 @@ const configuredCreds: integrations.Log360Credentials = {
   hasToken: true,
   updatedAt: '2026-05-10T00:00:00.000Z',
 };
-const healthOk: integrations.Log360Health = { configured: true, ok: true, latencyMs: 42 };
-const healthFailed: integrations.Log360Health = {
-  configured: true,
-  ok: false,
-  status: 401,
+const connectionOk = { success: true, latencyMs: 42, fieldCount: 12 };
+const connectionFailed = {
+  success: false,
+  latencyMs: 100,
   error: 'Token rejected',
 };
 
@@ -104,7 +104,7 @@ describe('ConnectionsPage', () => {
       .mockResolvedValueOnce(notConfiguredCreds)
       .mockResolvedValueOnce(configuredCreds);
     vi.mocked(integrations.log360CredentialsApi.save).mockResolvedValue(undefined);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthOk);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionOk);
 
     renderPage();
 
@@ -140,7 +140,7 @@ describe('ConnectionsPage', () => {
       .mockResolvedValueOnce(notConfiguredCreds)
       .mockResolvedValueOnce(configuredCreds);
     vi.mocked(integrations.log360CredentialsApi.save).mockResolvedValue(undefined);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthOk);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionOk);
 
     renderPage();
 
@@ -162,7 +162,7 @@ describe('ConnectionsPage', () => {
 
   it('shows connected state with latency and token masked when health ok', async () => {
     vi.mocked(integrations.log360CredentialsApi.get).mockResolvedValue(configuredCreds);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthOk);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionOk);
 
     renderPage();
 
@@ -174,11 +174,12 @@ describe('ConnectionsPage', () => {
     expect(screen.getByText('•••••')).toBeInTheDocument();
     expect(screen.getByText('(stored on server)')).toBeInTheDocument();
     expect(screen.getByText(/42ms/)).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
   });
 
   it('shows failed state with error message when health not ok', async () => {
     vi.mocked(integrations.log360CredentialsApi.get).mockResolvedValue(configuredCreds);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthFailed);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionFailed);
 
     renderPage();
 
@@ -192,7 +193,7 @@ describe('ConnectionsPage', () => {
 
   it('disconnect flow calls DELETE credentials and resets UI', async () => {
     vi.mocked(integrations.log360CredentialsApi.get).mockResolvedValue(configuredCreds);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthOk);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionOk);
     vi.mocked(integrations.log360CredentialsApi.delete).mockResolvedValue(undefined);
 
     renderPage();
@@ -213,7 +214,7 @@ describe('ConnectionsPage', () => {
 
   it('shows Replace token form when "Replace token" is clicked', async () => {
     vi.mocked(integrations.log360CredentialsApi.get).mockResolvedValue(configuredCreds);
-    vi.mocked(integrations.log360Api.health).mockResolvedValue(healthOk);
+    vi.spyOn(Log360Client.prototype, 'testConnection').mockResolvedValue(connectionOk);
 
     renderPage();
 
