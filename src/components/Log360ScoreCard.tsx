@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
-import type { Log360Summary } from '../api/integrations';
+import type { Log360Overview } from '../services/log360Overview';
 
 export type Log360ScoreCardState = 'loading' | 'not-configured' | 'error' | 'ok';
 
 interface Log360ScoreCardProps {
   state: Log360ScoreCardState;
-  summary?: Log360Summary;
+  summary?: Log360Overview;
   error?: string;
   onRetry?: () => void;
 }
@@ -17,7 +17,7 @@ const breakdownItems = [
   { key: 'response', label: 'Response' },
 ] as const;
 
-function getBandClasses(band: Log360Summary['score']['band']) {
+function getBandClasses(band: Log360Overview['score']['band']) {
   if (band === 'compliant') {
     return {
       score: 'text-green-600',

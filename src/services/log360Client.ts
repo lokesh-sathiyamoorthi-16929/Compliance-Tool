@@ -197,17 +197,31 @@ export interface TestConnectionResult {
   error?: string;
 }
 
+const RESPONSE_LIST_KEYS = ['items', 'data', 'log_sources', 'groups', 'agents', 'incidents', 'alerts'] as const;
+
 function extractList<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
   if (value && typeof value === 'object') {
     const obj = value as Record<string, unknown>;
-    for (const candidate of ['items', 'data', 'log_sources', 'groups', 'agents', 'incidents', 'alerts']) {
+    for (const candidate of RESPONSE_LIST_KEYS) {
       if (Array.isArray(obj[candidate])) {
         return obj[candidate] as T[];
       }
     }
   }
   return [];
+}
+
+function getConnectionTestErrorMessage(error: unknown): string {
+  if (error instanceof Log360ClientError) {
+    return error.message;
+  }
+
+  if (error instanceof ApiError) {
+    return error.message;
+  }
+
+  return 'Connection test failed.';
 }
 
 /**
@@ -366,19 +380,17 @@ export class Log360Client {
   async testConnection(): Promise<TestConnectionResult> {
     const startedAt = performance.now();
     try {
-      const result = await apiRequest<{ configured: boolean; ok: boolean; latencyMs?: number; error?: string }>(
-        '/integrations/log360/health',
-      );
-      const latencyMs = result.latencyMs ?? Math.round(performance.now() - startedAt);
-      if (!result.ok) {
-        return { success: false, latencyMs, error: result.error ?? 'Log360 health check failed.' };
-      }
-      return { success: true, latencyMs };
+      const fields = await this.getLogFields();
+      return {
+        success: true,
+        latencyMs: Math.round(performance.now() - startedAt),
+        fieldCount: fields.length,
+      };
     } catch (error) {
       return {
         success: false,
         latencyMs: Math.round(performance.now() - startedAt),
-        error: error instanceof ApiError ? error.message : 'Connection test failed.',
+        error: getConnectionTestErrorMessage(error),
       };
     }
   }

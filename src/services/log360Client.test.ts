@@ -133,25 +133,30 @@ describe('Log360Client', () => {
     });
   });
 
-  it('testConnection returns success=true when health ok', async () => {
-    apiRequestMock.mockResolvedValue({ configured: true, ok: true, latencyMs: 42 });
+  it('testConnection probes the proxy log fields endpoint', async () => {
+    apiRequestMock.mockResolvedValue({ response: { log_fields: [{ field_name: 'host' }, { field_name: 'source' }] } });
 
     const log360 = new Log360Client();
     const result = await log360.testConnection();
 
     expect(result.success).toBe(true);
-    expect(result.latencyMs).toBe(42);
-    expect(apiRequestMock).toHaveBeenCalledWith('/integrations/log360/health');
+    expect(result.fieldCount).toBe(2);
+    expect(apiRequestMock).toHaveBeenCalledWith('/integrations/log360/proxy/api/v2/meta/log-fields', {
+      method: 'GET',
+      body: undefined,
+    });
   });
 
-  it('testConnection returns success=false when health not ok', async () => {
-    apiRequestMock.mockResolvedValue({ configured: true, ok: false, latencyMs: 100, error: 'Token rejected' });
+  it('testConnection returns success=false when the proxy probe fails', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_UNREACHABLE', 'Cannot reach Log360.', 502),
+    );
 
     const log360 = new Log360Client();
     const result = await log360.testConnection();
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('Token rejected');
+    expect(result.error).toBe('Backend could not reach Log360 server (network error).');
   });
 
   it('testConnection returns success=false when apiRequest throws', async () => {
@@ -163,7 +168,7 @@ describe('Log360Client', () => {
     const result = await log360.testConnection();
 
     expect(result.success).toBe(false);
-    expect(result.error).toBe('No credentials.');
+    expect(result.error).toBe('No Log360 connection saved. Configure it on the Connections page.');
   });
 
   it('Log360ClientError preserves kind, status, and code', () => {

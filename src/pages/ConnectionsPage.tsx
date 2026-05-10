@@ -6,9 +6,9 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { collectEvidence } from '../services/evidenceCollector';
-import { Log360Client } from '../services/log360Client';
-import { log360CredentialsApi, log360Api } from '../api/integrations';
-import type { Log360Credentials, Log360Health } from '../api/integrations';
+import { Log360Client, type TestConnectionResult } from '../services/log360Client';
+import { log360CredentialsApi } from '../api/integrations';
+import type { Log360Credentials } from '../api/integrations';
 import { ApiError } from '../api/client';
 
 function mapApiError(error: unknown): string {
@@ -38,7 +38,7 @@ export default function ConnectionsPage() {
 
   // Backend-driven state
   const [credentials, setCredentials] = useState<Log360Credentials | null>(null);
-  const [health, setHealth] = useState<Log360Health | null>(null);
+  const [connectionTest, setConnectionTest] = useState<TestConnectionResult | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -57,16 +57,16 @@ export default function ConnectionsPage() {
 
       if (creds.configured) {
         try {
-          const healthResult = await log360Api.health();
-          setHealth(healthResult);
+          const healthResult = await new Log360Client().testConnection();
+          setConnectionTest(healthResult);
           updateConnection('log360', {
-            connected: healthResult.ok,
+            connected: healthResult.success,
             serverUrl: creds.baseUrl ?? '',
             lastConnectionLatencyMs: healthResult.latencyMs,
-            lastError: healthResult.ok ? null : (healthResult.error ?? 'Health check failed'),
+            lastError: healthResult.success ? null : (healthResult.error ?? 'Connection test failed'),
           });
         } catch (err) {
-          setHealth(null);
+          setConnectionTest(null);
           updateConnection('log360', {
             connected: false,
             serverUrl: creds.baseUrl ?? '',
@@ -74,7 +74,7 @@ export default function ConnectionsPage() {
           });
         }
       } else {
-        setHealth(null);
+        setConnectionTest(null);
         updateConnection('log360', { connected: false, serverUrl: '' });
       }
     } catch (err) {
@@ -130,13 +130,13 @@ export default function ConnectionsPage() {
     updateConnection('log360', { testing: true, lastError: null });
 
     try {
-      const result = await log360Api.health();
-      setHealth(result);
+      const result = await new Log360Client().testConnection();
+      setConnectionTest(result);
       updateConnection('log360', {
         testing: false,
-        connected: result.ok,
+        connected: result.success,
         lastConnectionLatencyMs: result.latencyMs,
-        lastError: result.ok ? null : (result.error ?? 'Health check failed'),
+        lastError: result.success ? null : (result.error ?? 'Connection test failed'),
       });
     } catch (err) {
       updateConnection('log360', {
@@ -158,7 +158,7 @@ export default function ConnectionsPage() {
       setToken('');
       setShowTokenField(false);
       setCredentials(null);
-      setHealth(null);
+      setConnectionTest(null);
     } catch (err) {
       setSaveError(mapApiError(err));
     } finally {
@@ -174,7 +174,7 @@ export default function ConnectionsPage() {
     statusBadge = { label: '○ Checking…', className: 'bg-slate-50 text-slate-400 border-slate-200' };
   } else if (!isConfigured) {
     statusBadge = { label: '○ Not Configured', className: 'bg-slate-50 text-slate-500 border-slate-200' };
-  } else if (health?.ok) {
+  } else if (connectionTest?.success) {
     statusBadge = { label: '● Connected', className: 'bg-green-50 text-green-700 border-green-200' };
   } else {
     statusBadge = { label: '⚠ Failed', className: 'bg-red-50 text-red-700 border-red-200' };
@@ -223,7 +223,7 @@ export default function ConnectionsPage() {
         ) : isConfigured && !showTokenField ? (
           // Connected / Configured state
           <div className="space-y-4">
-            {health?.ok ? (
+            {connectionTest?.success ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle2 className="w-5 h-5 text-green-600" />
@@ -239,8 +239,11 @@ export default function ConnectionsPage() {
                     <span>•••••</span>{' '}
                     <span className="text-xs text-green-600">(stored on server)</span>
                   </p>
-                  {health.latencyMs !== undefined ? (
-                    <p><strong>Last check latency:</strong> {health.latencyMs}ms</p>
+                  {connectionTest.latencyMs !== undefined ? (
+                    <p><strong>Last check latency:</strong> {connectionTest.latencyMs}ms</p>
+                  ) : null}
+                  {connectionTest.fieldCount !== undefined ? (
+                    <p><strong>Health probe fields:</strong> {connectionTest.fieldCount}</p>
                   ) : null}
                   <p><strong>Last sync:</strong> {connections.log360.lastSync ? new Date(connections.log360.lastSync).toLocaleString() : '—'}</p>
                 </div>
@@ -252,9 +255,9 @@ export default function ConnectionsPage() {
                   <span className="font-semibold text-red-800">Connection Failed</span>
                 </div>
                 <p className="text-sm text-red-700 mb-2">
-                  {health?.error
-                    ? `Log360 returned ${health.status ? `${health.status} — ` : ''}${health.error}`
-                    : 'Log360 health check failed. The server may be down or the token rejected.'}
+                  {connectionTest?.error
+                    ? connectionTest.error
+                    : 'Log360 connection test failed. The server may be down or the token rejected.'}
                 </p>
                 <div className="text-sm text-red-700 space-y-1">
                   <p><strong>Server:</strong> {credentials?.baseUrl}</p>
@@ -267,7 +270,7 @@ export default function ConnectionsPage() {
               </div>
             )}
 
-            {log360Evidence && health?.ok ? (
+            {log360Evidence && connectionTest?.success ? (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                 Last evidence collection completed at {new Date(log360Evidence.collectedAt).toLocaleString()}.
               </div>
@@ -280,7 +283,7 @@ export default function ConnectionsPage() {
             ) : null}
 
             <div className="flex flex-wrap gap-3">
-              {health?.ok ? (
+              {connectionTest?.success ? (
                 <button
                   onClick={() => { void runSync(); }}
                   disabled={Boolean(evidenceLoading.all)}

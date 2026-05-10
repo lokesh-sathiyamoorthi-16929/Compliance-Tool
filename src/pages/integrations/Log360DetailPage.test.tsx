@@ -1,14 +1,22 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Log360DetailPage from './Log360DetailPage';
-import { log360Api } from '../../api/integrations';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useAppStore } from '../../store/useAppStore';
 import type { User } from '../../api/auth';
-import type { Log360Health, Log360Summary } from '../../api/integrations';
+import * as apiClient from '../../api/client';
 
-vi.mock('../../api/integrations');
+vi.mock('../../api/client', async (importOriginal) => {
+  const original = await importOriginal<typeof apiClient>();
+  return {
+    ...original,
+    apiRequest: vi.fn(),
+  };
+});
+
+const apiRequestMock = vi.mocked(apiClient.apiRequest);
 
 const adminUser: User = {
   id: 'u1',
@@ -28,54 +36,13 @@ const memberUser: User = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
-const sampleHealth: Log360Health = {
-  configured: true,
-  ok: true,
-  productVersion: '3.2.1',
-  user: 'svc-log360',
-};
-
-const sampleSummary: Log360Summary = {
-  configured: true,
-  ok: true,
-  productVersion: '3.2.1',
-  fetchedAt: '2026-05-08T00:00:00.000Z',
-  sources: {
-    total: 10,
-    online: 8,
-    offline: 1,
-    unknown: 1,
-    samples: [
-      { id: 's1', name: 'Collector-1', status: 'online', lastSeenAt: '2026-05-08T12:00:00.000Z' },
-    ],
-  },
-  alerts: {
-    total: 30,
-    open: 4,
-    closed: 26,
-    bySeverity: { high: 2, medium: 5, low: 10 },
-    samples: [
-      {
-        id: 'a1',
-        title: 'Suspicious login',
-        severity: 'high',
-        status: 'open',
-        createdAt: '2026-05-08T13:00:00.000Z',
-      },
-    ],
-  },
-  score: {
-    overall: 91,
-    band: 'compliant',
-    breakdown: {
-      health: { score: 92, weight: 0.25, reason: 'Healthy' },
-      coverage: { score: 89, weight: 0.25, reason: 'Good coverage' },
-      detection: { score: 95, weight: 0.25, reason: 'Strong detection' },
-      response: { score: 90, weight: 0.25, reason: 'Prompt response' },
-    },
-  },
-  errors: ['Alerts sample timeout'],
-};
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <Log360DetailPage />
+    </MemoryRouter>,
+  );
+}
 
 describe('Log360DetailPage', () => {
   beforeEach(() => {
@@ -87,60 +54,120 @@ describe('Log360DetailPage', () => {
       refreshToken: 'refresh',
       status: 'authenticated',
     });
-    vi.mocked(log360Api.health).mockResolvedValue(sampleHealth);
-    vi.mocked(log360Api.summary).mockResolvedValue(sampleSummary);
+    useAppStore.setState({
+      connections: {
+        log360: {
+          connected: false,
+          serverUrl: 'http://log360.example.com:8095',
+          connectedAt: null,
+          lastSync: null,
+          testing: false,
+          lastConnectionLatencyMs: undefined,
+          lastError: null,
+        },
+        ad360: {
+          connected: false,
+          serverUrl: '',
+          connectedAt: null,
+          lastSync: null,
+          testing: false,
+          lastConnectionLatencyMs: undefined,
+          lastError: null,
+        },
+      },
+    });
+    apiRequestMock.mockImplementation(async (path) => {
+      switch (path) {
+        case '/integrations/log360/proxy/api/v2/meta/log-fields':
+          return { response: { log_fields: [{ field_name: 'host' }, { field_name: 'source' }] } };
+        case '/integrations/log360/proxy/api/v2/log-sources':
+          return { response: [{ id: 's1', name: 'Collector-1' }, { id: 's2', name: 'Collector-2' }, { id: 's3', name: 'Collector-3' }] };
+        case '/integrations/log360/proxy/api/v2/alerts':
+          return { response: [{ id: 'a1' }, { id: 'a2' }] };
+        case '/integrations/log360/proxy/api/v2/alerts/profile':
+          return { response: [{ profile_id: 'p1' }] };
+        default:
+          throw new Error(`Unexpected path: ${String(path)}`);
+      }
+    });
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
-  it('renders all sections from summary data', async () => {
-    render(
-      <MemoryRouter>
-        <Log360DetailPage />
-      </MemoryRouter>,
-    );
+  it('renders four proxy-backed metric tiles and does not call legacy endpoints or polling timers', async () => {
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('Log360 Compliance')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('✅ Connected v3.2.1')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Score' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Alerts' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Non-fatal errors' })).toBeInTheDocument();
-    expect(screen.queryByText(/Retention/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Archive (enabled|disabled)/i)).not.toBeInTheDocument();
-    expect(screen.getByText('Collector-1')).toBeInTheDocument();
-    expect(screen.getByText('Suspicious login')).toBeInTheDocument();
+    expect(screen.getAllByText('Health').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Coverage').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Detection').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Response').length).toBeGreaterThan(0);
+    expect(screen.getByText('Log fields')).toBeInTheDocument();
+    expect(screen.getByText('Log sources')).toBeInTheDocument();
+    expect(screen.getByText('Alerts')).toBeInTheDocument();
+    expect(screen.getByText('Alert profiles')).toBeInTheDocument();
+    expect(screen.getAllByText('200 OK')).toHaveLength(4);
+
+    const paths = apiRequestMock.mock.calls.map(([path]) => String(path));
+    expect(paths).toHaveLength(4);
+    expect(paths.every((path) => path.startsWith('/integrations/log360/proxy/api/v2/'))).toBe(true);
+    expect(paths.every((path) => !path.includes(['/integrations/log360/', 'summary'].join('')))).toBe(true);
+    expect(paths.every((path) => !path.includes(['/integrations/log360/', 'health'].join('')))).toBe(true);
+    expect(apiRequestMock.mock.calls.filter(([path]) => path === '/integrations/log360/proxy/api/v2/meta/log-fields')).toHaveLength(1);
+    expect(apiRequestMock.mock.calls.filter(([path]) => path === '/integrations/log360/proxy/api/v2/log-sources')).toHaveLength(1);
+    expect(apiRequestMock.mock.calls.filter(([path]) => path === '/integrations/log360/proxy/api/v2/alerts')).toHaveLength(1);
+    expect(apiRequestMock.mock.calls.filter(([path]) => path === '/integrations/log360/proxy/api/v2/alerts/profile')).toHaveLength(1);
   });
 
-  it('uses four score inputs with normalized weights summing to 1.0 and no retention key', () => {
-    const keys = Object.keys(sampleSummary.score.breakdown);
-    expect(keys).toEqual(['health', 'coverage', 'detection', 'response']);
-    expect(keys).not.toContain('retention');
+  it('shows a partial-failure banner from real endpoint diagnostics', async () => {
+    apiRequestMock.mockImplementation(async (path) => {
+      if (path === '/integrations/log360/proxy/api/v2/alerts/profile') {
+        throw new apiClient.ApiError('UNAUTHORIZED', 'Your ComplianceIQ session expired. Please log in again.', 401);
+      }
 
-    const weightTotal = Object.values(sampleSummary.score.breakdown).reduce((sum, item) => sum + item.weight, 0);
-    expect(weightTotal).toBe(1);
-  });
+      if (path === '/integrations/log360/proxy/api/v2/meta/log-fields') {
+        return { response: { log_fields: [{ field_name: 'host' }] } };
+      }
 
-  it('renders no credential configured state', async () => {
-    vi.mocked(log360Api.summary).mockResolvedValue({
-      ...sampleSummary,
-      configured: false,
+      if (path === '/integrations/log360/proxy/api/v2/log-sources') {
+        return { response: [{ id: 's1', name: 'Collector-1' }] };
+      }
+
+      if (path === '/integrations/log360/proxy/api/v2/alerts') {
+        return { response: [{ id: 'a1' }] };
+      }
+
+      throw new Error(`Unexpected path: ${String(path)}`);
     });
 
-    render(
-      <MemoryRouter>
-        <Log360DetailPage />
-      </MemoryRouter>,
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('1 of 4 Log360 endpoint checks failed.')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/Response: Your ComplianceIQ session expired/i)).toBeInTheDocument();
+    expect(screen.queryByText('Log360 endpoint not found')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'View endpoint diagnostics' })).toHaveAttribute('href', '#endpoint-diagnostics');
+  });
+
+  it('renders no credential configured state when proxy calls report not configured', async () => {
+    apiRequestMock.mockRejectedValue(
+      new apiClient.ApiError('LOG360_NOT_CONFIGURED', 'No credentials configured.', 409),
     );
+
+    renderPage();
 
     await waitFor(() => {
       expect(screen.getByText('No Log360 credential configured. Add one in Admin → Credentials.')).toBeInTheDocument();
     });
+
     expect(screen.getByRole('link', { name: 'Go to Credentials' })).toHaveAttribute('href', '/admin/credentials');
   });
 
@@ -165,28 +192,5 @@ describe('Log360DetailPage', () => {
 
     expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
     expect(screen.queryByText('Log360 Compliance')).not.toBeInTheDocument();
-  });
-
-  it('shows honest error state without placeholder retention/archive literals', async () => {
-    vi.mocked(log360Api.health).mockRejectedValue(new Error('Health unavailable'));
-    vi.mocked(log360Api.summary).mockRejectedValue(new Error('Summary unavailable'));
-
-    render(
-      <MemoryRouter>
-        <Log360DetailPage />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText('Log360 Compliance')).toBeInTheDocument();
-      expect(screen.getByText('Failed to load Log360 integration details.')).toBeInTheDocument();
-    });
-
-    const pageText = document.body.textContent ?? '';
-    expect(pageText).not.toContain('180');
-    expect(pageText).not.toContain('Archive enabled');
-    expect(pageText).not.toContain('Archive disabled');
-    const renderedScoreValues = [...pageText.matchAll(/Score:\s*(\d+)/gi)].map((match) => Number(match[1]));
-    expect(renderedScoreValues.every((value) => value === 0)).toBe(true);
   });
 });
