@@ -21,7 +21,7 @@ function formatDate(value?: string) {
 
 function normalizeWeightPercent(weight: number, total: number): number {
   if (total <= 0) return 0;
-  return Math.round(((weight / total) * 1000)) / 10;
+  return Number(((weight / total) * 100).toFixed(1));
 }
 
 export default function Log360DetailPage() {

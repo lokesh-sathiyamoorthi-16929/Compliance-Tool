@@ -186,6 +186,7 @@ describe('Log360DetailPage', () => {
     expect(pageText).not.toContain('180');
     expect(pageText).not.toContain('Archive enabled');
     expect(pageText).not.toContain('Archive disabled');
-    expect(pageText).not.toMatch(/Score:\s*[1-9]\d*/i);
+    const renderedScoreValues = [...pageText.matchAll(/Score:\s*(\d+)/gi)].map((match) => Number(match[1]));
+    expect(renderedScoreValues.every((value) => value === 0)).toBe(true);
   });
 });

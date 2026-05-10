@@ -30,7 +30,17 @@ The Log360 token is managed by the backend and never sent to the browser.
 
 Returns available log field definitions for building queries.
 
-This request is a `GET` with no request body.
+**Response:**
+```json
+{
+  "response": {
+    "log_fields": [
+      { "field_name": "host", "display_name": "Host", "data_type": "string" },
+      ...
+    ]
+  }
+}
+```
 
 ### `GET /api/v2/meta/users`
 
@@ -42,18 +52,6 @@ Returns metadata user records that can be referenced in filters.
   "response": {
     "users": [
       { "user_id": "u1", "user_name": "admin" }
-    ]
-  }
-}
-```
-
-**Response:**
-```json
-{
-  "response": {
-    "log_fields": [
-      { "field_name": "host", "display_name": "Host", "data_type": "string" },
-      ...
     ]
   }
 }
