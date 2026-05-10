@@ -3,9 +3,18 @@ import { apiRequest } from './client';
 export interface Log360Health {
   configured: boolean;
   ok: boolean;
+  status?: number;
+  latencyMs?: number;
   productVersion?: string;
   user?: string;
   error?: string;
+}
+
+export interface Log360Credentials {
+  configured: boolean;
+  baseUrl?: string;
+  hasToken: boolean;
+  updatedAt?: string;
 }
 
 export interface Log360Source {
@@ -57,5 +66,22 @@ export const log360Api = {
   },
   summary(): Promise<Log360Summary> {
     return apiRequest<Log360Summary>('/integrations/log360/summary');
+  },
+};
+
+export const log360CredentialsApi = {
+  get(): Promise<Log360Credentials> {
+    return apiRequest<Log360Credentials>('/integrations/log360/credentials');
+  },
+  save(payload: { baseUrl: string; authToken: string }): Promise<void> {
+    return apiRequest<void>('/integrations/log360/credentials', {
+      method: 'PUT',
+      body: payload,
+    });
+  },
+  delete(): Promise<void> {
+    return apiRequest<void>('/integrations/log360/credentials', {
+      method: 'DELETE',
+    });
   },
 };

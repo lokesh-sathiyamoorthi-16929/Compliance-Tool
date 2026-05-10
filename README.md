@@ -87,51 +87,55 @@ The development server starts at `http://localhost:5173/Compliance-Tool/`
 ## 🔌 Running with the Backend
 
 Frontend: this repo (`Compliance-Tool`)  
-Backend: [`lokesh-sathiyamoorthi-16929/Compliance-Tool-API`](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API)
+Backend: [`lokesh-sathiyamoorthi-16929/Compliance-Tool-API`](https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API) (PR #6)
 
 PowerShell quickstart:
 
 ```powershell
-# Terminal 1 - backend API
+# Step 1 — start backend API
 git clone https://github.com/lokesh-sathiyamoorthi-16929/Compliance-Tool-API.git
 cd Compliance-Tool-API
 docker-compose up -d
 npm install
 npm run migrate
-npm run dev
+npm run dev         # backend listens on http://localhost:3001
 
-# Terminal 2 - frontend
+# Step 2 — login and get a ComplianceIQ JWT
+curl -X POST http://localhost:3001/auth/login `
+  -H "Content-Type: application/json" `
+  -d '{"username":"admin","password":"admin"}'
+# Returns {"accessToken":"eyJ..."}
+
+# Step 3 — start frontend
 cd ..\Compliance-Tool
 copy .env.example .env
 npm install
-npm run dev
+npm run dev         # frontend listens on http://localhost:5173
+
+# Step 4 — open Connections page in the browser and enter Log360 URL + token
+# The token is saved server-side (AES-GCM encrypted). The browser never stores it.
 ```
 
-The frontend reads `VITE_API_BASE_URL` (default example: `http://localhost:3001`) and will require login before protected pages.
+The frontend reads `VITE_API_BASE_URL` (default: `http://localhost:3001`) from `.env.example`.
 
 ---
 
-## 🔐 Log360 CORS / Proxy Notes
+## 🔐 Log360 Architecture — Server-Side Proxy
 
-When connecting directly from browser to customer-hosted Log360, CORS may block requests.
+All Log360 v2 API traffic goes through the backend proxy. The browser never calls Log360 directly and never stores the Log360 auth token.
 
-- **Direct mode (default):** calls Log360 API directly from the browser.
-- **Proxy mode:** enable **Use proxy** in the Connections page. The client sends requests to:
-  - `/api/proxy?target=<encoded-log360-url>`
-
-For local development, Vite includes `/log360-proxy/*` forwarding controlled by:
-
-```bash
-VITE_LOG360_DEV_TARGET=https://your-log360-host:8400
+```
+Browser → POST /integrations/log360/credentials   → Backend stores encrypted token
+Browser → GET  /integrations/log360/health         → Backend calls Log360, returns result
+Browser → GET  /integrations/log360/proxy/api/v2/… → Backend forwards request + token to Log360
 ```
 
-Production deployment must use one of:
+**Benefits:**
+- Zero CORS issues — Log360 only sees the backend (Node.js), not the browser
+- Token never leaves the server — stored with AES-GCM encryption in the backend vault
+- Single source of truth — rotate the token in one place, all users benefit immediately
 
-1. Log360 CORS allowlist includes the ComplianceIQ origin, or
-2. A thin proxy layer (example stub included at `api/proxy.ts` for serverless-style deployment).
-
-> Security note: storing raw bearer tokens in browser storage is MVP-only. Use a secure secrets vault/proxy in production.
-> Proxy security note: set `LOG360_PROXY_ALLOWLIST` (comma-separated `host:port`) so proxy requests are restricted to approved Log360 targets.
+**Old "Use proxy" checkbox and `api/proxy.ts` have been removed.** The `VITE_LOG360_DEV_TARGET` env var is no longer used.
 
 ---
 

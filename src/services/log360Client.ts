@@ -1,8 +1,4 @@
-export interface Log360ClientConfig {
-  baseUrl: string;
-  token: string;
-  useProxy?: boolean;
-}
+import { apiRequest, ApiError } from '../api/client';
 
 export interface Log360ApiErrorPayload {
   code?: string;
@@ -17,6 +13,7 @@ export interface Log360ApiErrorPayload {
 
 export type Log360ErrorKind =
   | 'UNAUTHORIZED'
+  | 'NOT_CONFIGURED'
   | 'SERVER_ERROR'
   | 'NETWORK_ERROR'
   | 'TIMEOUT'
@@ -188,20 +185,6 @@ export interface TestConnectionResult {
   error?: string;
 }
 
-const REQUEST_TIMEOUT_MS = 30_000;
-const MAX_RETRIES = 1;
-const MAX_BACKOFF_MS = 2_000;
-
-function normalizeBaseUrl(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, '');
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 function extractList<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
   if (value && typeof value === 'object') {
@@ -215,27 +198,83 @@ function extractList<T>(value: unknown): T[] {
   return [];
 }
 
-function isLikelyCorsOrNetworkError(error: unknown): boolean {
-  return error instanceof TypeError;
+/**
+ * Translates an ApiError thrown by the backend proxy into a typed Log360ClientError.
+ * Maps backend-specific error codes (LOG360_NOT_CONFIGURED, LOG360_UNREACHABLE, etc.)
+ * to user-readable messages.
+ */
+function mapProxyError(error: unknown, logicalPath: string): Log360ClientError {
+  if (!(error instanceof ApiError)) {
+    return new Log360ClientError('UNKNOWN', 'Unexpected Log360 API error.');
+  }
+
+  if (error.status === 401) {
+    return new Log360ClientError(
+      'UNAUTHORIZED',
+      'Your ComplianceIQ session expired. Please log in again.',
+      401,
+    );
+  }
+
+  if (error.code === 'LOG360_NOT_CONFIGURED') {
+    return new Log360ClientError(
+      'NOT_CONFIGURED',
+      'No Log360 connection saved. Configure it on the Connections page.',
+      409,
+      'LOG360_NOT_CONFIGURED',
+    );
+  }
+
+  if (error.code === 'LOG360_UNREACHABLE') {
+    return new Log360ClientError(
+      'NETWORK_ERROR',
+      'Backend could not reach Log360 server (network error).',
+      502,
+      'LOG360_UNREACHABLE',
+    );
+  }
+
+  if (error.code === 'LOG360_TIMEOUT') {
+    return new Log360ClientError(
+      'TIMEOUT',
+      'Log360 did not respond within 30 seconds.',
+      504,
+      'LOG360_TIMEOUT',
+    );
+  }
+
+  if (error.code === 'LOG360_INVALID_PATH') {
+    if (import.meta.env.DEV) {
+      console.error(`[DEV] LOG360_INVALID_PATH for path: ${logicalPath}`);
+    }
+    return new Log360ClientError(
+      'BAD_REQUEST',
+      `Invalid Log360 API path: ${logicalPath}`,
+      400,
+      'LOG360_INVALID_PATH',
+    );
+  }
+
+  if (error.code === 'NETWORK_UNREACHABLE') {
+    return new Log360ClientError(
+      'NETWORK_ERROR',
+      'Backend is unreachable. Start the API server and try again.',
+    );
+  }
+
+  // Pass-through upstream 4xx/5xx from Log360
+  const kind: Log360ErrorKind = error.status !== undefined && error.status >= 500 ? 'SERVER_ERROR' : 'BAD_REQUEST';
+  return new Log360ClientError(kind, error.message, error.status);
 }
 
+/**
+ * Log360Client routes all requests through the backend proxy
+ * at `${API_BASE}/integrations/log360/proxy/api/v2/...`.
+ *
+ * The ComplianceIQ JWT is attached automatically by apiRequest.
+ * The Log360 auth token is managed server-side — the browser never sees it.
+ */
 export class Log360Client {
-  private baseUrl: string;
-
-  private token: string;
-
-  private useProxy: boolean;
-
-  constructor(config: Log360ClientConfig) {
-    this.baseUrl = normalizeBaseUrl(config.baseUrl);
-    this.token = config.token;
-    this.useProxy = Boolean(config.useProxy);
-  }
-
-  setProxyEnabled(enabled: boolean): void {
-    this.useProxy = enabled;
-  }
-
   async getLogFields(): Promise<LogField[]> {
     const response = await this.request<LogFieldsResponse>('POST', '/api/v2/meta/log-fields', {});
     return extractList<LogField>(response.response?.log_fields ?? response.response ?? response);
@@ -309,138 +348,37 @@ export class Log360Client {
   async testConnection(): Promise<TestConnectionResult> {
     const startedAt = performance.now();
     try {
-      const fields = await this.getLogFields();
-      return {
-        success: true,
-        latencyMs: Math.round(performance.now() - startedAt),
-        fieldCount: fields.length,
-      };
+      const result = await apiRequest<{ configured: boolean; ok: boolean; latencyMs?: number; error?: string }>(
+        '/integrations/log360/health',
+      );
+      const latencyMs = result.latencyMs ?? Math.round(performance.now() - startedAt);
+      if (!result.ok) {
+        return { success: false, latencyMs, error: result.error ?? 'Log360 health check failed.' };
+      }
+      return { success: true, latencyMs };
     } catch (error) {
       return {
         success: false,
         latencyMs: Math.round(performance.now() - startedAt),
-        error: this.toFriendlyErrorMessage(error),
+        error: error instanceof ApiError ? error.message : 'Connection test failed.',
       };
     }
   }
 
-  private buildRequestUrl(path: string): string {
-    const target = `${this.baseUrl}${path}`;
-    if (!this.useProxy) {
-      return target;
-    }
-    return `/api/proxy?target=${encodeURIComponent(target)}`;
-  }
-
-  private async request<T>(method: 'GET' | 'POST', path: string, body?: unknown): Promise<T> {
-    let attempt = 0;
-
-    while (attempt <= MAX_RETRIES) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-      try {
-        const response = await fetch(this.buildRequestUrl(path), {
-          method,
-          headers: {
-            Authorization: `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: method === 'POST' ? JSON.stringify(body ?? {}) : undefined,
-          signal: controller.signal,
-        });
-
-        if (response.status === 401) {
-          throw new Log360ClientError(
-            'UNAUTHORIZED',
-            'Invalid or missing AuthToken. Please verify your bearer token.',
-            401,
-            '07001113',
-          );
-        }
-
-        if (response.status >= 500) {
-          if (attempt < MAX_RETRIES) {
-            attempt += 1;
-            const delay = Math.min(MAX_BACKOFF_MS, 400 * (2 ** (attempt - 1)));
-            await sleep(delay);
-            continue;
-          }
-
-          const payload = await this.safeParseErrorPayload(response);
-          throw new Log360ClientError(
-            'SERVER_ERROR',
-            payload.error?.detail ?? payload.detail ?? payload.error?.title ?? payload.title ?? 'Server error from Log360.',
-            response.status,
-            payload.error?.code ?? payload.code,
-          );
-        }
-
-        if (!response.ok) {
-          const payload = await this.safeParseErrorPayload(response);
-          throw new Log360ClientError(
-            'BAD_REQUEST',
-            payload.error?.detail ?? payload.detail ?? payload.error?.title ?? payload.title ?? `Log360 API request failed (${response.status}).`,
-            response.status,
-            payload.error?.code ?? payload.code,
-          );
-        }
-
-        if (response.status === 204) {
-          return undefined as T;
-        }
-
-        return (await response.json()) as T;
-      } catch (error) {
-        if (error instanceof Log360ClientError) {
-          throw error;
-        }
-
-        if (error instanceof DOMException && error.name === 'AbortError') {
-          throw new Log360ClientError('TIMEOUT', 'Request to Log360 timed out after 30 seconds.');
-        }
-
-        if (isLikelyCorsOrNetworkError(error)) {
-          throw new Log360ClientError(
-            'NETWORK_ERROR',
-            'Cannot reach Log360 server. The server may be down or blocked by CORS. Set up proxy and retry.',
-          );
-        }
-
-        throw new Log360ClientError('UNKNOWN', 'Unexpected Log360 API error.');
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    }
-
-    throw new Log360ClientError('UNKNOWN', 'Unexpected Log360 API retry failure.');
-  }
-
-  private async safeParseErrorPayload(response: Response): Promise<Log360ApiErrorPayload> {
+  /**
+   * All Log360 v2 calls go through the backend proxy.
+   * logicalPath: the Log360-facing path, e.g. '/api/v2/log-sources'
+   * Proxied to: '/integrations/log360/proxy/api/v2/log-sources'
+   */
+  private async request<T>(method: 'GET' | 'POST', logicalPath: string, body?: unknown): Promise<T> {
+    const proxyPath = `/integrations/log360/proxy${logicalPath}`;
     try {
-      return (await response.json()) as Log360ApiErrorPayload;
-    } catch {
-      return {};
+      return await apiRequest<T>(proxyPath, {
+        method,
+        body: method === 'POST' ? body : undefined,
+      });
+    } catch (error) {
+      throw mapProxyError(error, logicalPath);
     }
-  }
-
-  private toFriendlyErrorMessage(error: unknown): string {
-    if (!(error instanceof Log360ClientError)) {
-      return 'Connection test failed.';
-    }
-
-    if (error.kind === 'UNAUTHORIZED') {
-      return 'Invalid or expired token';
-    }
-
-    if (error.kind === 'NETWORK_ERROR') {
-      return 'Cannot reach server / CORS blocked';
-    }
-
-    if (error.kind === 'SERVER_ERROR') {
-      return 'Server error';
-    }
-
-    return error.message;
   }
 }
