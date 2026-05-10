@@ -28,7 +28,7 @@ The Log360 token is managed by the backend and never sent to the browser.
 
 ### `GET /api/v2/meta/log-fields`
 
-Returns available log field definitions for building queries.
+Returns available log field definitions for building queries. No request body.
 
 **Response:**
 ```json
@@ -44,7 +44,7 @@ Returns available log field definitions for building queries.
 
 ### `GET /api/v2/meta/users`
 
-Returns metadata user records that can be referenced in filters.
+Returns the list of users available in Log360.
 
 **Response:**
 ```json
@@ -156,7 +156,7 @@ Gets a single incident by ID.
 
 ### `POST /api/v2/alerts`
 
-Returns active alerts.
+Returns active alerts. Pass an empty body `{}` for an unfiltered list; filter fields (severity, time range) can be added to the request body.
 
 **Request body (example):**
 ```json
@@ -175,9 +175,17 @@ Returns active alerts.
 }
 ```
 
+### `POST /api/v2/alerts/bulk`
+
+Bulk alert operations.
+
+### `GET /api/v2/alerts/bulk`
+
+Returns bulk alert results.
+
 ### `GET /api/v2/alerts/profile`
 
-Returns alert profile metadata used for response signal calculations.
+Returns alert profile metadata.
 
 **Response (example):**
 ```json
