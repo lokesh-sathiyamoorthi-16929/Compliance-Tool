@@ -1,0 +1,10 @@
+{
+  "response": {
+    "rows": [
+      { "event_id": "1", "severity": "critical", "message": "Sample async search result" }
+    ]
+  },
+  "meta": {
+    "total": 1
+  }
+}

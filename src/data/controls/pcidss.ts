@@ -340,6 +340,7 @@ export const pcidssControls: Control[] = [
       'Protect logs from modification (log integrity)',
       'Retain logs for at least 12 months (3 months immediately available)',
       'Review logs at least daily for critical systems',
+      'Evidence collector validates Windows + database + network log-source coverage from Log360 v2 `/api/v2/log-sources`',
     ],
     manageEngineProducts: [
       {

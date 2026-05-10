@@ -109,6 +109,11 @@ export interface ConnectionState {
   connected: boolean;
   serverUrl: string;
   token: string;
+  clientId?: string;
+  clientSecret?: string;
+  refreshToken?: string;
+  connectedUser?: string;
+  tokenExpiresAt?: string | null;
   useProxy: boolean;
   connectedAt: string | null;
   lastSync: string | null;

@@ -1,10 +1,22 @@
-import {
-  Agent,
-  Incident,
-  Log360Client,
-  LogSource,
-  ReportProfile,
-} from './log360Client';
+import type { Agent, Incident, LogSource, ReportProfile } from '../api/log360';
+
+export interface Log360ApiLike {
+  logSources: {
+    list: (params?: { from?: number; limit?: number }) => Promise<{ items: LogSource[]; total: number }>;
+    listGroups: () => Promise<Array<{ id: string; name: string; member_count?: number; log_source_ids?: string[] }>>;
+    listAgents: () => Promise<Agent[]>;
+  };
+  reports: {
+    listProfiles: (params?: { from?: number; limit?: number }) => Promise<ReportProfile[]>;
+    getReportData: (profileId: string, params?: { from_time?: string; to_time?: string; limit?: number }) => Promise<{ response: unknown; meta?: Record<string, unknown> }>;
+  };
+  incidents: {
+    list: (params?: { from?: number; limit?: number }) => Promise<{ items: Incident[]; total: number }>;
+  };
+  alerts: {
+    list: (params?: { from?: number; limit?: number }) => Promise<{ items: Array<Record<string, unknown>>; total: number }>;
+  };
+}
 
 export interface ReportSample {
   reportId: string;
@@ -31,6 +43,11 @@ export interface Evidence {
     byType: Record<string, number>;
     names: string[];
     items: LogSource[];
+    inScopeCoverage: {
+      scopedHosts: string[];
+      coveredHosts: string[];
+      coverageRatio: number;
+    };
   };
   agents: {
     total: number;
@@ -46,6 +63,9 @@ export interface Evidence {
     byUniqueKey: Record<string, ReportProfile>;
     all: ReportProfile[];
   };
+  retention: {
+    retentionDays: number;
+  };
   recentReportSamples: Record<string, ReportSample>;
   incidents: {
     total: number;
@@ -56,6 +76,7 @@ export interface Evidence {
   };
   alerts: {
     total: number;
+    criticalLast7d: number;
   };
   collectedAt: string;
   partialSuccess: boolean;
@@ -74,25 +95,12 @@ const CURATED_REPORT_KEYS = [
 
 function toArray<T>(value: unknown): T[] {
   if (Array.isArray(value)) return value as T[];
-  return [];
-}
-
-function flattenProfiles(modules: unknown[]): ReportProfile[] {
-  const flattened: ReportProfile[] = [];
-
-  for (const module of modules) {
-    if (!module || typeof module !== 'object') continue;
-    const categories = toArray<Record<string, unknown>>((module as Record<string, unknown>).categories);
-    for (const category of categories) {
-      const groups = toArray<Record<string, unknown>>(category.groups);
-      for (const group of groups) {
-        const reports = toArray<ReportProfile>(group.reports);
-        flattened.push(...reports);
-      }
-    }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if (Array.isArray(obj.rows)) return obj.rows as T[];
+    if (Array.isArray(obj.items)) return obj.items as T[];
   }
-
-  return flattened;
+  return [];
 }
 
 function normalizeStatus(value: unknown): string {
@@ -103,57 +111,67 @@ function pickLatestTimestamp(rows: unknown[]): string | null {
   const candidates: string[] = [];
   for (const row of rows) {
     if (!row || typeof row !== 'object') continue;
-    const r = row as Record<string, unknown>;
+    const record = row as Record<string, unknown>;
     for (const key of ['time_generated', 'generated_time', 'timestamp', 'created_time', 'event_time']) {
-      const value = r[key];
+      const value = record[key];
       if (typeof value === 'string') {
         candidates.push(value);
       }
     }
   }
 
-  if (candidates.length === 0) return null;
+  if (!candidates.length) return null;
   return candidates.sort().reverse()[0];
 }
 
 function findReportForKey(allProfiles: ReportProfile[], key: string): ReportProfile | undefined {
-  const lcKey = key.toLowerCase();
-  return allProfiles.find((report) => {
-    const uniqueKey = String(report.unique_key ?? '').toLowerCase();
-    const reportName = String(report.report_name ?? '').toLowerCase();
-    return uniqueKey.includes(lcKey) || reportName.includes(lcKey.replace(/_/g, ' '));
+  const needle = key.toLowerCase();
+  return allProfiles.find((profile) => {
+    const uniqueKey = String(profile.unique_key ?? '').toLowerCase();
+    const name = String(profile.name ?? '').toLowerCase();
+    return uniqueKey.includes(needle) || name.includes(needle.replace(/_/g, ' '));
   });
 }
 
 function getErrorMessage(reason: unknown): string {
-  if (reason instanceof Error) {
-    return reason.message;
-  }
-  return 'Unknown error';
+  return reason instanceof Error ? reason.message : 'Unknown error';
 }
 
-export async function collectEvidence(client: Log360Client): Promise<Evidence> {
+function toIncidentStatus(value: unknown): 'open' | 'closed' {
+  const status = normalizeStatus(value);
+  return status === 'closed' || status === 'resolved' ? 'closed' : 'open';
+}
+
+function normalizeType(source: LogSource): string {
+  return String(source.type ?? source.log_type ?? 'unknown').toLowerCase();
+}
+
+function estimateInScopeCoverage(names: string[]): { scopedHosts: string[]; coveredHosts: string[]; coverageRatio: number } {
+  const scopedHosts = ['win-dc-01', 'sql-01', 'fw-edge-01'];
+  const normalized = names.map((name) => name.toLowerCase());
+  const coveredHosts = scopedHosts.filter((host) => normalized.some((name) => name.includes(host)));
+  return {
+    scopedHosts,
+    coveredHosts,
+    coverageRatio: scopedHosts.length ? coveredHosts.length / scopedHosts.length : 0,
+  };
+}
+
+export async function collectEvidence(log360: Log360ApiLike): Promise<Evidence> {
   const collectedAt = new Date().toISOString();
 
-  const [
-    logSourcesResult,
-    groupsResult,
-    agentsResult,
-    profilesResult,
-    incidentsResult,
-    alertsResult,
-  ] = await Promise.allSettled([
-    client.getLogSources(),
-    client.getLogSourceGroups(),
-    client.getAgents(),
-    client.getReportProfiles({ from: 0, limit: 100 }),
-    client.getIncidents({ response_type: 'client' }),
-    client.getAlerts(),
+  const [logSourcesResult, groupsResult, agentsResult, profilesResult, incidentsResult, alertsResult] = await Promise.allSettled([
+    log360.logSources.list({ from: 0, limit: 200 }),
+    log360.logSources.listGroups(),
+    log360.logSources.listAgents(),
+    log360.reports.listProfiles({ from: 0, limit: 200 }),
+    log360.incidents.list({ from: 0, limit: 200 }),
+    log360.alerts.list({ from: 0, limit: 200 }),
   ]);
 
   const errors: EvidenceErrors = {};
 
-  const logSources = logSourcesResult.status === 'fulfilled' ? logSourcesResult.value : [];
+  const logSources = logSourcesResult.status === 'fulfilled' ? logSourcesResult.value.items : [];
   if (logSourcesResult.status === 'rejected') errors.logSources = getErrorMessage(logSourcesResult.reason);
 
   const groups = groupsResult.status === 'fulfilled' ? groupsResult.value : [];
@@ -162,39 +180,28 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
   const agents = agentsResult.status === 'fulfilled' ? agentsResult.value : [];
   if (agentsResult.status === 'rejected') errors.agents = getErrorMessage(agentsResult.reason);
 
-  const modules =
-    profilesResult.status === 'fulfilled'
-      ? toArray<Record<string, unknown>>(profilesResult.value.response?.modules)
-      : [];
+  const profiles = profilesResult.status === 'fulfilled' ? profilesResult.value : [];
   if (profilesResult.status === 'rejected') errors.reportProfiles = getErrorMessage(profilesResult.reason);
 
-  const incidents = incidentsResult.status === 'fulfilled' ? incidentsResult.value : [];
+  const incidents = incidentsResult.status === 'fulfilled' ? incidentsResult.value.items : [];
   if (incidentsResult.status === 'rejected') errors.incidents = getErrorMessage(incidentsResult.reason);
 
-  const alertsPayload = alertsResult.status === 'fulfilled' ? alertsResult.value : undefined;
+  const alerts = alertsResult.status === 'fulfilled' ? alertsResult.value.items : [];
   if (alertsResult.status === 'rejected') errors.alerts = getErrorMessage(alertsResult.reason);
 
   const byType: Record<string, number> = {};
   for (const source of logSources) {
-    const type = String(source.log_type ?? 'unknown');
+    const type = normalizeType(source);
     byType[type] = (byType[type] ?? 0) + 1;
   }
 
-  const healthy = agents.filter((agent) => {
-    const status = normalizeStatus(agent.health_status ?? agent.status);
-    return status === 'healthy' || status === 'online' || status === 'active';
-  }).length;
-
+  const healthy = agents.filter((agent) => ['healthy', 'online', 'active'].includes(normalizeStatus(agent.status))).length;
   const unhealthy = agents
-    .filter((agent) => {
-      const status = normalizeStatus(agent.health_status ?? agent.status);
-      return status && !['healthy', 'online', 'active'].includes(status);
-    })
+    .filter((agent) => !['healthy', 'online', 'active'].includes(normalizeStatus(agent.status)))
     .map((agent) => String(agent.name ?? agent.id ?? 'Unknown Agent'));
 
-  const allProfiles = flattenProfiles(modules);
   const reportProfilesByUniqueKey: Record<string, ReportProfile> = {};
-  for (const profile of allProfiles) {
+  for (const profile of profiles) {
     const key = String(profile.unique_key ?? '').trim();
     if (key) {
       reportProfilesByUniqueKey[key] = profile;
@@ -202,41 +209,34 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
   }
 
   const reportSamples: Record<string, ReportSample> = {};
-
   const now = new Date();
-  const start24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  const end = now.toISOString();
+  const fromTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const toTime = now.toISOString();
 
-  const reportPromises = CURATED_REPORT_KEYS
-    .map((key) => {
-      const report = findReportForKey(allProfiles, key);
-      if (!report?.report_id) return null;
+  const reportResults = await Promise.all(
+    CURATED_REPORT_KEYS.map(async (key) => {
+      const report = findReportForKey(profiles, key);
+      if (!report?.profile_id) return null;
 
-      return client
-        .getReportData(report.report_id, {
-          startTime: start24h,
-          endTime: end,
-        })
-        .then((data) => ({ key, report, data }))
-        .catch((error) => ({ key, report, error }));
-    })
-    .filter(Boolean) as Array<Promise<{ key: string; report: ReportProfile; data?: { response?: unknown; meta?: { total_items?: number; items_in_current_page?: number } }; error?: unknown }>>;
-
-  const reportResults = await Promise.all(reportPromises);
+      try {
+        const data = await log360.reports.getReportData(report.profile_id, { from_time: fromTime, to_time: toTime, limit: 100 });
+        return { key, report, data };
+      } catch (error) {
+        errors.reports = errors.reports ?? getErrorMessage(error);
+        return null;
+      }
+    }),
+  );
 
   for (const result of reportResults) {
-    if (result.error) {
-      errors.reports = errors.reports ?? 'Some report samples failed to load.';
-      continue;
-    }
-
-    const rows = toArray<Record<string, unknown>>(result.data?.response);
+    if (!result) continue;
+    const rows = toArray<Record<string, unknown>>((result.data as { response?: unknown }).response);
     reportSamples[result.key] = {
-      reportId: result.report.report_id,
-      reportName: result.report.report_name,
+      reportId: result.report.profile_id,
+      reportName: result.report.name,
       uniqueKey: String(result.report.unique_key ?? result.key),
-      totalItems: Number(result.data?.meta?.total_items ?? rows.length ?? 0),
-      sampleCount: Math.min(100, Number(result.data?.meta?.items_in_current_page ?? rows.length ?? 0)),
+      totalItems: Number((result.data.meta?.total as number | undefined) ?? rows.length),
+      sampleCount: rows.length,
       latestTimestamp: pickLatestTimestamp(rows),
     };
   }
@@ -244,29 +244,25 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
   const incidentsBySeverity: Record<string, number> = {};
   let openIncidents = 0;
   let closedIncidents = 0;
-
   for (const incident of incidents) {
     const severity = String(incident.severity ?? 'unknown').toLowerCase();
     incidentsBySeverity[severity] = (incidentsBySeverity[severity] ?? 0) + 1;
-
-    const status = normalizeStatus(incident.status);
-    if (['closed', 'resolved'].includes(status)) {
-      closedIncidents += 1;
-    } else {
-      openIncidents += 1;
-    }
+    if (toIncidentStatus(incident.status) === 'closed') closedIncidents += 1;
+    else openIncidents += 1;
   }
 
-  const alertItems = toArray<Record<string, unknown>>((alertsPayload as { response?: unknown })?.response);
-
-  const hasErrors = Object.keys(errors).length > 0;
+  const criticalLast7d = alerts.filter((alert) => normalizeStatus((alert as { severity?: string }).severity) === 'critical').length;
+  const logSourceNames = logSources.map((source) => String(source.log_source ?? source.id ?? 'unknown'));
+  const inScopeCoverage = estimateInScopeCoverage(logSourceNames);
+  const retentionDays = profiles.reduce((best, profile) => Math.max(best, Number(profile.retention_days ?? 0)), 0);
 
   return {
     logSources: {
       count: logSources.length,
       byType,
-      names: logSources.map((source) => String(source.name ?? source.id ?? 'Unknown Source')),
+      names: logSourceNames,
       items: logSources,
+      inScopeCoverage,
     },
     agents: {
       total: agents.length,
@@ -280,7 +276,10 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
     })),
     reportProfiles: {
       byUniqueKey: reportProfilesByUniqueKey,
-      all: allProfiles,
+      all: profiles,
+    },
+    retention: {
+      retentionDays,
     },
     recentReportSamples: reportSamples,
     incidents: {
@@ -291,10 +290,11 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
       items: incidents,
     },
     alerts: {
-      total: alertItems.length,
+      total: alerts.length,
+      criticalLast7d,
     },
     collectedAt,
-    partialSuccess: hasErrors,
+    partialSuccess: Object.keys(errors).length > 0,
     errors,
   };
 }

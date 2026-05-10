@@ -513,6 +513,7 @@ export const hipaaControls: Control[] = [
       'Review audit logs regularly for suspicious activity',
       'Protect audit logs from unauthorized modification',
       'Retain audit logs per organizational policy (minimum 6 years)',
+      'Evidence collector uses Log360 v2 `/api/v2/log-sources` + report profile retention metadata for coverage checks',
     ],
     manageEngineProducts: [
       {

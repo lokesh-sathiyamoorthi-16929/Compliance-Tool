@@ -1,0 +1,10 @@
+{
+  "response": {
+    "rows": [
+      { "timestamp": "2026-05-10T10:00:00Z", "message": "Sample report row" }
+    ]
+  },
+  "meta": {
+    "total": 1
+  }
+}

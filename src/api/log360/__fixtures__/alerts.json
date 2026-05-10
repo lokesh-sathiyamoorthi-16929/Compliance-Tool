@@ -1,0 +1,11 @@
+{
+  "response": {
+    "alerts": [
+      { "alert_id": "a-1", "name": "Multiple failed logons", "severity": "critical", "status": "open", "created_time": "2026-05-09T10:30:00Z" },
+      { "alert_id": "a-2", "name": "Privilege escalation", "severity": "high", "status": "closed", "created_time": "2026-05-08T12:00:00Z" }
+    ]
+  },
+  "meta": {
+    "total": 2
+  }
+}

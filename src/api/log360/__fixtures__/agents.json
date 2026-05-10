@@ -1,0 +1,9 @@
+{
+  "response": {
+    "agents": [
+      { "id": "agent-1", "name": "Agent-DC-01", "status": "online" },
+      { "id": "agent-2", "name": "Agent-SQL-01", "status": "online" },
+      { "id": "agent-3", "name": "Agent-FW-01", "status": "offline" }
+    ]
+  }
+}

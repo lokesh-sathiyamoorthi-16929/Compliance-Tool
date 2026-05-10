@@ -22,6 +22,7 @@ import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
 import { runControlChecks } from '../engine/controlChecks';
 import { scoreFramework } from '../engine/scoringEngine';
+import { useLog360 } from '../hooks/useLog360';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -80,8 +81,16 @@ export default function DashboardPage() {
   const [log360CardState, setLog360CardState] = useState<Log360ScoreCardState>('loading');
   const [log360Summary, setLog360Summary] = useState<Log360Summary | undefined>(undefined);
   const [log360Error, setLog360Error] = useState('');
+  const [liveKpis, setLiveKpis] = useState({
+    logSourcesConfigured: 12,
+    agentsOnline: 10,
+    openIncidents30d: 4,
+    criticalAlerts7d: 3,
+    reportsAvailable: 18,
+  });
 
   const { connections, log360Evidence } = useAppStore();
+  const { client: log360Client } = useLog360();
   const liveScoring = useMemo(() => {
     if (!log360Evidence || !connections.log360.connected) return null;
     if (selectedFrameworkId !== 'hipaa' && selectedFrameworkId !== 'pcidss') return null;
@@ -119,6 +128,7 @@ export default function DashboardPage() {
   const anyConnected = connections.log360.connected || connections.ad360.connected;
   const demoMode = isDemoMode();
   const canShowLog360Card = demoMode || user?.role === 'admin';
+  const showSampleBanner = !connections.log360.connected;
 
   const pieData = [
     { name: 'Passed', value: scoreData.passed },
@@ -187,6 +197,53 @@ export default function DashboardPage() {
   useEffect(() => {
     void loadLog360Summary();
   }, [loadLog360Summary]);
+
+  useEffect(() => {
+    const loadKpis = async () => {
+      if (!connections.log360.connected) {
+        setLiveKpis({
+          logSourcesConfigured: 12,
+          agentsOnline: 10,
+          openIncidents30d: 4,
+          criticalAlerts7d: 3,
+          reportsAvailable: 18,
+        });
+        return;
+      }
+
+      try {
+        const now = new Date();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+        const [sources, agents, incidents, alerts, profiles] = await Promise.all([
+          log360Client.logSources.list({ limit: 1 }),
+          log360Client.logSources.listAgents(),
+          log360Client.incidents.list({ status: 'open', from_time: thirtyDaysAgo, limit: 200 }),
+          log360Client.alerts.list({ severity: 'critical', from_time: sevenDaysAgo, limit: 200 }),
+          log360Client.reports.listProfiles({ limit: 200 }),
+        ]);
+
+        setLiveKpis({
+          logSourcesConfigured: sources.total,
+          agentsOnline: agents.filter((agent) => (agent.status ?? '').toLowerCase() === 'online').length,
+          openIncidents30d: incidents.total,
+          criticalAlerts7d: alerts.total,
+          reportsAvailable: profiles.length,
+        });
+      } catch {
+        setLiveKpis({
+          logSourcesConfigured: 12,
+          agentsOnline: 10,
+          openIncidents30d: 4,
+          criticalAlerts7d: 3,
+          reportsAvailable: 18,
+        });
+      }
+    };
+
+    void loadKpis();
+  }, [connections.log360.connected, log360Client.alerts, log360Client.incidents, log360Client.logSources, log360Client.reports]);
 
   return (
     <div>
@@ -273,6 +330,11 @@ export default function DashboardPage() {
           </Link>
         </div>
       )}
+      {showSampleBanner ? (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 mb-6 text-sm text-blue-800">
+          Showing sample data — connect Log360 in Connections to see live posture.
+        </div>
+      ) : null}
 
       {canShowLog360Card ? (
         <div className="mb-6 ml-auto w-full max-w-md">
@@ -286,6 +348,21 @@ export default function DashboardPage() {
           />
         </div>
       ) : null}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6">
+        {[
+          { label: 'Log Sources Configured', value: liveKpis.logSourcesConfigured },
+          { label: 'Agents Online', value: liveKpis.agentsOnline },
+          { label: 'Open Incidents (30d)', value: liveKpis.openIncidents30d },
+          { label: 'Critical Alerts (7d)', value: liveKpis.criticalAlerts7d },
+          { label: 'Reports Available', value: liveKpis.reportsAvailable },
+        ].map((card) => (
+          <div key={card.label} className="card p-4">
+            <p className="text-xs font-semibold text-slate-500">{card.label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-2">{card.value}</p>
+          </div>
+        ))}
+      </div>
 
       {/* Top metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

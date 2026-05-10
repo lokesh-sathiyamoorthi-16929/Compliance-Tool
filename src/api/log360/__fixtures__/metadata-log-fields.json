@@ -1,0 +1,9 @@
+{
+  "response": {
+    "log_fields": [
+      { "field_name": "SEVERITY", "display_name": "Severity", "data_type": "string" },
+      { "field_name": "USERNAME", "display_name": "Username", "data_type": "string" },
+      { "field_name": "LOGTYPE", "display_name": "Log Type", "data_type": "string" }
+    ]
+  }
+}

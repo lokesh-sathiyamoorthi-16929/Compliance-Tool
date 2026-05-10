@@ -16,3 +16,7 @@ export function isDemoMode(): boolean {
 export function isConnectedMode(): boolean {
   return !isDemoMode();
 }
+
+export function isLog360MockMode(): boolean {
+  return import.meta.env.VITE_LOG360_MOCK === 'true';
+}

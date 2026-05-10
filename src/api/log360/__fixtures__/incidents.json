@@ -1,0 +1,23 @@
+{
+  "response": {
+    "incidents": [
+      {
+        "incident_id": "inc-1",
+        "name": "Suspicious admin login",
+        "severity": "critical",
+        "status": "open",
+        "assignee": "admin",
+        "created_time": "2026-05-09T09:00:00Z",
+        "actors": [{ "name": "Administrator", "type": "user" }],
+        "notes": [{ "note": "Investigating", "created_time": "2026-05-09T09:10:00Z" }],
+        "evidence": [{ "name": "event-log", "value": "4625" }],
+        "activity": [{ "action": "created", "created_time": "2026-05-09T09:00:00Z" }]
+      }
+    ]
+  },
+  "meta": {
+    "from": 0,
+    "limit": 50,
+    "total": 1
+  }
+}

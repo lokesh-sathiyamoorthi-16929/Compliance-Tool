@@ -1,0 +1,14 @@
+{
+  "response": {
+    "log_sources": [
+      { "id": "ls-1", "log_source": "WIN-DC-01", "domain_name": "corp.local", "agent_id": "agent-1", "status": "online", "type": "windows" },
+      { "id": "ls-2", "log_source": "SQL-01", "domain_name": "corp.local", "agent_id": "agent-2", "status": "online", "type": "database" },
+      { "id": "ls-3", "log_source": "FW-EDGE-01", "domain_name": "corp.local", "agent_id": "agent-3", "status": "offline", "type": "network" }
+    ]
+  },
+  "meta": {
+    "from": 0,
+    "limit": 50,
+    "total": 3
+  }
+}

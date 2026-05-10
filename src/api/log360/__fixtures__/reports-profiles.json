@@ -1,0 +1,8 @@
+{
+  "response": {
+    "profiles": [
+      { "profile_id": "rp-1", "name": "Windows Logon Success", "retention_days": 180, "unique_key": "windows_logon_success" },
+      { "profile_id": "rp-2", "name": "Privileged User Activity", "retention_days": 180, "unique_key": "privileged_user_activity" }
+    ]
+  }
+}

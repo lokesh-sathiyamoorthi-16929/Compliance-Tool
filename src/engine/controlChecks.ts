@@ -108,15 +108,25 @@ export const CONTROL_CHECKS: ControlCheck[] = [
     title: 'Audit controls - log sources present',
     weight: 5,
     category: 'Technical',
-    evidenceSources: ['log360.logSources'],
+    evidenceSources: ['log360.logSources', 'log360.retention'],
     check: (evidence) => {
-      const pass = evidence.logSources.count > 0;
+      const requiredRetentionDays = 180;
+      const hasCoverage = evidence.logSources.inScopeCoverage.coverageRatio >= 1;
+      const hasRetention = evidence.retention.retentionDays >= requiredRetentionDays;
+      const pass = hasCoverage && hasRetention;
       return {
-        status: pass ? 'pass' : 'fail',
-        score: pass ? 100 : 0,
-        message: pass ? 'Log sources are configured for audit controls.' : 'No log sources configured.',
+        status: pass ? 'pass' : hasCoverage || hasRetention ? 'partial' : 'fail',
+        score: pass ? 100 : hasCoverage || hasRetention ? 60 : 0,
+        message: pass
+          ? `In-scope host coverage is complete and retention is ${evidence.retention.retentionDays} days.`
+          : `Coverage ${Math.round(evidence.logSources.inScopeCoverage.coverageRatio * 100)}% and retention ${evidence.retention.retentionDays}/${requiredRetentionDays} days.`,
         evidenceRefs: [
-          makeRef('log360.logSources', `Configured log sources: ${evidence.logSources.count}`, evidence.collectedAt),
+          makeRef(
+            'log360.logSources',
+            `Covered hosts: ${evidence.logSources.inScopeCoverage.coveredHosts.join(', ') || 'none'} / ${evidence.logSources.inScopeCoverage.scopedHosts.join(', ')}`,
+            evidence.collectedAt,
+          ),
+          makeRef('log360.retention', `Retention days: ${evidence.retention.retentionDays}`, evidence.collectedAt),
         ],
       };
     },
@@ -299,16 +309,19 @@ export const CONTROL_CHECKS: ControlCheck[] = [
     category: 'Technical',
     evidenceSources: ['log360.logSources'],
     check: (evidence) => {
-      const cardRegex = /(db|sql|payment|card|pos)/i;
-      const inScope = evidence.logSources.names.filter((name) => cardRegex.test(name));
+      const typeKeys = Object.keys(evidence.logSources.byType).map((key) => key.toLowerCase());
+      const hasWindows = typeKeys.some((key) => key.includes('windows'));
+      const hasDatabase = typeKeys.some((key) => key.includes('db') || key.includes('sql') || key.includes('database'));
+      const hasNetwork = typeKeys.some((key) => key.includes('network') || key.includes('firewall') || key.includes('router'));
+      const pass = hasWindows && hasDatabase && hasNetwork;
       return {
-        status: inScope.length > 0 ? 'pass' : 'partial',
-        score: inScope.length > 0 ? 100 : 60,
-        message: inScope.length > 0
-          ? 'Card-data related log sources detected.'
-          : 'No explicit card-data source names detected (heuristic).',
+        status: pass ? 'pass' : hasWindows || hasDatabase || hasNetwork ? 'partial' : 'fail',
+        score: pass ? 100 : 50,
+        message: pass
+          ? 'Windows, database, and network device log sources are present for PCI DSS 10.2.'
+          : 'PCI DSS 10.2 needs Windows, database, and network log-source coverage.',
         evidenceRefs: [
-          makeRef('log360.logSources', `Matched sources: ${inScope.join(', ') || 'none'}`, evidence.collectedAt),
+          makeRef('log360.logSources', `Detected types: ${typeKeys.join(', ') || 'none'}`, evidence.collectedAt),
         ],
       };
     },

@@ -1,0 +1,17 @@
+{
+  "response": {
+    "users": [
+      {
+        "user_id": "1",
+        "username": "admin",
+        "display_name": "Log360 Administrator",
+        "email": "admin@example.local"
+      }
+    ]
+  },
+  "meta": {
+    "from": 0,
+    "limit": 50,
+    "total": 1
+  }
+}
