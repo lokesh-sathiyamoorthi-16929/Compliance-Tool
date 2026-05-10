@@ -6,9 +6,14 @@ import type { Evidence } from '../services/evidenceCollector';
 const sampleEvidence: Evidence = {
   logSources: {
     count: 3,
-    byType: { windows: 2, firewall: 1 },
-    names: ['sql-prod-01', 'payment-gateway', 'domain-controller'],
+    byType: { windows: 2, database: 1, network: 1 },
+    names: ['win-dc-01', 'sql-01', 'fw-edge-01'],
     items: [],
+    inScopeCoverage: {
+      scopedHosts: ['win-dc-01', 'sql-01', 'fw-edge-01'],
+      coveredHosts: ['win-dc-01', 'sql-01', 'fw-edge-01'],
+      coverageRatio: 1,
+    },
   },
   agents: {
     total: 3,
@@ -21,10 +26,13 @@ const sampleEvidence: Evidence = {
   ],
   reportProfiles: {
     byUniqueKey: {
-      file_integrity: { report_id: '11', report_name: 'File Integrity', unique_key: 'file_integrity' },
-      account_management: { report_id: '12', report_name: 'Account Management', unique_key: 'account_management' },
+      file_integrity: { profile_id: '11', name: 'File Integrity', unique_key: 'file_integrity', retention_days: 180 },
+      account_management: { profile_id: '12', name: 'Account Management', unique_key: 'account_management', retention_days: 180 },
     },
     all: [],
+  },
+  retention: {
+    retentionDays: 180,
   },
   recentReportSamples: {
     account_management: {
@@ -69,6 +77,7 @@ const sampleEvidence: Evidence = {
   },
   alerts: {
     total: 6,
+    criticalLast7d: 2,
   },
   collectedAt: '2026-05-09T00:10:00.000Z',
   partialSuccess: false,

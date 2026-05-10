@@ -41,8 +41,9 @@ function asApiError(error: unknown, fallbackStatus?: number): Log360ApiError {
   if (error && typeof error === 'object') {
     const obj = error as Record<string, unknown>;
     const nested = obj.error as Record<string, unknown> | undefined;
+    const codeValue = nested?.code ?? obj.code ?? undefined;
     return {
-      code: String(nested?.code ?? obj.code ?? '' || undefined),
+      code: typeof codeValue === 'string' ? codeValue : undefined,
       title: String(nested?.title ?? obj.title ?? 'Log360 API error'),
       detail: String(nested?.detail ?? obj.detail ?? 'Request failed'),
       httpStatus: fallbackStatus,

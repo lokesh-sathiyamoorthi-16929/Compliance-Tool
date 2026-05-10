@@ -59,6 +59,7 @@ export interface LogSource {
   agent_id?: string;
   status?: string;
   type?: string;
+  log_type?: string;
   [key: string]: unknown;
 }
 
