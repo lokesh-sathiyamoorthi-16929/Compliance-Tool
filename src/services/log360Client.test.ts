@@ -24,8 +24,36 @@ describe('Log360Client', () => {
     await log360.getLogFields();
 
     expect(apiRequestMock).toHaveBeenCalledTimes(1);
-    const [path] = apiRequestMock.mock.calls[0];
+    const [path, options] = apiRequestMock.mock.calls[0];
     expect(path).toBe('/integrations/log360/proxy/api/v2/meta/log-fields');
+    expect((options as { method?: string })?.method).toBe('GET');
+    expect((options as { body?: unknown })?.body).toBeUndefined();
+  });
+
+  it('getAlerts() uses POST /integrations/log360/proxy/api/v2/alerts with filter body', async () => {
+    apiRequestMock.mockResolvedValue({ response: [] });
+
+    const log360 = new Log360Client();
+    await log360.getAlerts();
+
+    expect(apiRequestMock).toHaveBeenCalledTimes(1);
+    const [path, options] = apiRequestMock.mock.calls[0];
+    expect(path).toBe('/integrations/log360/proxy/api/v2/alerts');
+    expect((options as { method?: string })?.method).toBe('POST');
+    expect((options as { body?: unknown })?.body).toEqual({});
+  });
+
+  it('getAlertProfiles() uses GET /integrations/log360/proxy/api/v2/alerts/profile (singular)', async () => {
+    apiRequestMock.mockResolvedValue({ response: [{ profile_id: 'p1', profile_name: 'Critical Alerts' }] });
+
+    const log360 = new Log360Client();
+    const result = await log360.getAlertProfiles();
+
+    expect(apiRequestMock).toHaveBeenCalledTimes(1);
+    const [path, options] = apiRequestMock.mock.calls[0];
+    expect(path).toBe('/integrations/log360/proxy/api/v2/alerts/profile');
+    expect((options as { method?: string })?.method).toBe('GET');
+    expect(result).toEqual([{ profile_id: 'p1', profile_name: 'Critical Alerts' }]);
   });
 
   it('maps LOG360_NOT_CONFIGURED to NOT_CONFIGURED error', async () => {
