@@ -119,7 +119,7 @@ export default function AttestationsPage() {
             <div className="mb-3 flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-slate-900">{framework.name}</h2>
-                <p className="text-xs text-slate-500">Rubric: {framework.rubric?.toUpperCase()} · Score {score?.overall ?? 0}</p>
+                <p className="text-xs text-slate-500">Rubric: {framework.rubric?.toUpperCase()} · Score {typeof score?.overall === 'number' ? score.overall : 'N/A'}</p>
               </div>
             </div>
 

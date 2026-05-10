@@ -18,6 +18,7 @@ function getAutomatedStatus(control: Control, evidence: Evidence | null): 'succe
 
   if (!hasTelemetry) return 'failed';
 
+  // Heuristic fallback for controls without explicit endpoint-to-control mappings yet.
   const controlText = `${control.id} ${control.title}`.toLowerCase();
   if (controlText.includes('audit') || controlText.includes('log')) {
     return evidence.logSources.count > 0 ? 'success' : 'failed';

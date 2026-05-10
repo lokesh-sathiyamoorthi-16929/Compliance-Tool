@@ -50,6 +50,14 @@ export default function DashboardPage() {
     const partial = liveScoring.controls.filter((control) => control.normalizedScore >= 40 && control.normalizedScore < 80).length;
     const notApplicable = 0;
 
+    const controlCountByTheme = new Map<string, number>();
+    liveScoring.controls.forEach((control) => {
+      const key = control.control?.theme ?? control.control?.safeguard;
+      if (key) {
+        controlCountByTheme.set(key, (controlCountByTheme.get(key) ?? 0) + 1);
+      }
+    });
+
     return {
       frameworkId: selectedFrameworkId,
       overallScore: liveScoring.overall,
@@ -57,7 +65,7 @@ export default function DashboardPage() {
       familyScores: (liveScoring.themes ?? []).map((score) => ({
         family: score.name,
         score: score.score,
-        controlCount: liveScoring.controls.filter((control) => control.control?.theme === score.id || control.control?.safeguard === score.id).length,
+        controlCount: controlCountByTheme.get(score.id) ?? 0,
       })),
       passed,
       failed,
