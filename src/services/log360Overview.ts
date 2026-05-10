@@ -47,6 +47,8 @@ type EndpointProbeResult<T> = {
   error?: Log360ClientError;
 };
 
+const RESPONSE_COUNT_KEYS = ['items', 'data', 'alerts'] as const;
+
 function getFailureCategory(kind: Log360ClientError['kind']): string {
   switch (kind) {
     case 'UNAUTHORIZED':
@@ -75,7 +77,7 @@ function countResponseItems(value: unknown): number {
     }
     if (record.response && typeof record.response === 'object') {
       const nested = record.response as Record<string, unknown>;
-      for (const key of ['items', 'data', 'alerts']) {
+      for (const key of RESPONSE_COUNT_KEYS) {
         if (Array.isArray(nested[key])) {
           return nested[key].length;
         }
