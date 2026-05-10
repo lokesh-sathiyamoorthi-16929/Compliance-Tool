@@ -198,6 +198,11 @@ export default function ConnectionsPage() {
               <Info className="w-3.5 h-3.5" />
               <span>Via backend proxy — all Log360 traffic goes through the API server</span>
             </div>
+            <div className="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+              <p><strong>Data sources:</strong> Coverage uses <code>GET /api/v2/log-sources</code>. Health uses <code>GET /api/v2/meta/log-fields</code> (probe).</p>
+              <p>Detection uses <code>POST /api/v2/alerts</code>. Response uses <code>GET /api/v2/alerts/profile</code>.</p>
+              <p>Retention/archive settings are not exposed by the Log360 v2 API and are not measured by ComplianceIQ.</p>
+            </div>
           </div>
           <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${statusBadge.className}`}>
             {statusBadge.label}

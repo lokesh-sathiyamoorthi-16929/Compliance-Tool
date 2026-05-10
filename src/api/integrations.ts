@@ -45,7 +45,6 @@ export interface Log360Summary {
   fetchedAt: string;
   sources: { total: number; online: number; offline: number; unknown: number; samples: Log360Source[] };
   alerts: { total: number; open: number; closed: number; bySeverity: Record<string, number>; samples: Log360Alert[] };
-  retention: { retentionDays: number; archiveEnabled: boolean };
   score: {
     overall: number;
     breakdown: {
@@ -53,7 +52,6 @@ export interface Log360Summary {
       coverage: Log360ScoreBreakdown;
       detection: Log360ScoreBreakdown;
       response: Log360ScoreBreakdown;
-      retention: Log360ScoreBreakdown;
     };
     band: 'compliant' | 'attention' | 'at-risk';
   };

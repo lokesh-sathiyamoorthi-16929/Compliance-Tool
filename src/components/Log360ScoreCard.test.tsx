@@ -23,19 +23,14 @@ const sampleSummary: Log360Summary = {
     bySeverity: {},
     samples: [],
   },
-  retention: {
-    retentionDays: 90,
-    archiveEnabled: true,
-  },
   score: {
     overall: 82,
     band: 'attention',
     breakdown: {
-      health: { score: 80, weight: 20, reason: 'Good' },
-      coverage: { score: 77, weight: 20, reason: 'Good' },
-      detection: { score: 85, weight: 20, reason: 'Good' },
-      response: { score: 79, weight: 20, reason: 'Good' },
-      retention: { score: 88, weight: 20, reason: 'Good' },
+      health: { score: 80, weight: 0.25, reason: 'Good' },
+      coverage: { score: 77, weight: 0.25, reason: 'Good' },
+      detection: { score: 85, weight: 0.25, reason: 'Good' },
+      response: { score: 79, weight: 0.25, reason: 'Good' },
     },
   },
   errors: [],

@@ -114,7 +114,9 @@ export const CONTROL_CHECKS: ControlCheck[] = [
       return {
         status: pass ? 'pass' : 'fail',
         score: pass ? 100 : 0,
-        message: pass ? 'Log sources are configured for audit controls.' : 'No log sources configured.',
+        message: pass
+          ? 'Log source coverage is present for audit controls; retention is attested separately.'
+          : 'No log sources configured; retention is attested separately.',
         evidenceRefs: [
           makeRef('log360.logSources', `Configured log sources: ${evidence.logSources.count}`, evidence.collectedAt),
         ],
@@ -305,8 +307,8 @@ export const CONTROL_CHECKS: ControlCheck[] = [
         status: inScope.length > 0 ? 'pass' : 'partial',
         score: inScope.length > 0 ? 100 : 60,
         message: inScope.length > 0
-          ? 'Card-data related log sources detected.'
-          : 'No explicit card-data source names detected (heuristic).',
+          ? 'Card-data related log sources detected. Retention evidence is attested separately.'
+          : 'No explicit card-data source names detected (heuristic); retention evidence is attested separately.',
         evidenceRefs: [
           makeRef('log360.logSources', `Matched sources: ${inScope.join(', ') || 'none'}`, evidence.collectedAt),
         ],

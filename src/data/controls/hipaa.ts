@@ -512,7 +512,7 @@ export const hipaaControls: Control[] = [
       'Collect and centralize audit logs',
       'Review audit logs regularly for suspicious activity',
       'Protect audit logs from unauthorized modification',
-      'Retain audit logs per organizational policy (minimum 6 years)',
+      'Maintain retention attestations per organizational policy (minimum 6 years) outside this automated check',
     ],
     manageEngineProducts: [
       {
@@ -523,7 +523,7 @@ export const hipaaControls: Control[] = [
           'Tamper-proof log archival',
           'Real-time audit log analysis',
           'Pre-built HIPAA audit reports',
-          'Log retention management (up to 7 years)',
+          'Log source coverage visibility',
           'Alert on suspicious ePHI access patterns',
         ],
         primary: true,
@@ -542,7 +542,7 @@ export const hipaaControls: Control[] = [
     ],
     remediationSuggestions: [
       'Deploy Log360 to centralize audit logs from all ePHI systems',
-      'Configure minimum 6-year log retention policy',
+      'Verify minimum 6-year retention attestation through policy/process evidence (separate from API telemetry)',
       'Set up daily automated review of high-risk audit events',
       'Enable tamper-evident logging to meet HIPAA requirements',
     ],

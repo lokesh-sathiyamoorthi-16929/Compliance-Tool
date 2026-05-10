@@ -7,6 +7,8 @@
 > `GET ${API_BASE}/integrations/log360/proxy/api/v2/log-sources`  
 >
 > The backend proxy attaches the stored Log360 auth token server-side before forwarding.
+>
+> This document lists the Log360 v2 endpoints used by ComplianceIQ. Retention/archive settings are intentionally not consumed because no public v2 endpoint exposes them — fabricating a value would violate our "no fake data" rule.
 
 ---
 
@@ -22,7 +24,7 @@ The Log360 token is managed by the backend and never sent to the browser.
 
 ---
 
-## Log Fields
+## Metadata
 
 ### `GET /api/v2/meta/log-fields`
 
@@ -43,6 +45,17 @@ Returns available log field definitions for building queries. No request body.
 ### `GET /api/v2/meta/users`
 
 Returns the list of users available in Log360.
+
+**Response:**
+```json
+{
+  "response": {
+    "users": [
+      { "user_id": "u1", "user_name": "admin" }
+    ]
+  }
+}
+```
 
 ---
 
@@ -145,6 +158,23 @@ Gets a single incident by ID.
 
 Returns active alerts. Pass an empty body `{}` for an unfiltered list; filter fields (severity, time range) can be added to the request body.
 
+**Request body (example):**
+```json
+{
+  "from": 0,
+  "limit": 100
+}
+```
+
+**Response (example):**
+```json
+{
+  "response": [
+    { "id": "a1", "severity": "high", "status": "open", "title": "Suspicious login" }
+  ]
+}
+```
+
 ### `POST /api/v2/alerts/bulk`
 
 Bulk alert operations.
@@ -156,6 +186,15 @@ Returns bulk alert results.
 ### `GET /api/v2/alerts/profile`
 
 Returns alert profile metadata.
+
+**Response (example):**
+```json
+{
+  "response": [
+    { "profile_id": "p1", "name": "Critical Alert Profile", "enabled": true }
+  ]
+}
+```
 
 ---
 

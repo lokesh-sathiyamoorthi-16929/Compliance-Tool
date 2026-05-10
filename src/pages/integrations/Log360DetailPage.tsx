@@ -10,7 +10,6 @@ const breakdownRows = [
   { key: 'coverage', label: 'Coverage' },
   { key: 'detection', label: 'Detection' },
   { key: 'response', label: 'Response' },
-  { key: 'retention', label: 'Retention' },
 ] as const;
 
 function formatDate(value?: string) {
@@ -18,6 +17,11 @@ function formatDate(value?: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '—';
   return date.toLocaleString();
+}
+
+function normalizeWeightPercent(weight: number, total: number): number {
+  if (total <= 0) return 0;
+  return Number(((weight / total) * 100).toFixed(1));
 }
 
 export default function Log360DetailPage() {
@@ -114,6 +118,7 @@ export default function Log360DetailPage() {
   const pillClass = hasHealthError
     ? 'border-red-200 bg-red-50 text-red-700'
     : 'border-green-200 bg-green-50 text-green-700';
+  const breakdownWeightTotal = breakdownRows.reduce((sum, row) => sum + summary.score.breakdown[row.key].weight, 0);
 
   return (
     <div className="space-y-6">
@@ -166,7 +171,8 @@ export default function Log360DetailPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm font-semibold text-slate-900">{row.label}</p>
                     <p className="text-xs text-slate-600">
-                      Score: <strong>{item.score}</strong> · Weight: <strong>{item.weight}%</strong>
+                      Score: <strong>{item.score}</strong> · Weight:{' '}
+                      <strong>{normalizeWeightPercent(item.weight, breakdownWeightTotal)}%</strong>
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-slate-600">{item.reason}</p>
@@ -179,20 +185,6 @@ export default function Log360DetailPage() {
           </div>
         </section>
 
-        <section className="card p-6">
-          <h2 className="text-lg font-semibold text-slate-900">Retention</h2>
-          <div className="mt-4 flex items-center gap-3">
-            <div className="text-4xl font-bold text-slate-900">{summary.retention.retentionDays}</div>
-            <span className="text-sm text-slate-600">days</span>
-          </div>
-          <span
-            className={`mt-3 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-              summary.retention.archiveEnabled ? 'bg-green-50 text-green-700' : 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {summary.retention.archiveEnabled ? 'Archive enabled' : 'Archive disabled'}
-          </span>
-        </section>
       </div>
 
       <section className="card p-6">
