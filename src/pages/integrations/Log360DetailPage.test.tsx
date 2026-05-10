@@ -1,14 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import Log360DetailPage from './Log360DetailPage';
-import { log360Api } from '../../api/integrations';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import { useAuthStore } from '../../store/useAuthStore';
+import { useAppStore } from '../../store/useAppStore';
 import type { User } from '../../api/auth';
-import type { Log360Health, Log360Summary } from '../../api/integrations';
-
-vi.mock('../../api/integrations');
+import { SAMPLE_LOG360_EVIDENCE } from '../../api/log360/__fixtures__/sampleEvidence';
 
 const adminUser: User = {
   id: 'u1',
@@ -28,104 +26,94 @@ const memberUser: User = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
-const sampleHealth: Log360Health = {
-  configured: true,
-  ok: true,
-  productVersion: '3.2.1',
-  user: 'svc-log360',
-};
+beforeEach(() => {
+  vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:3001');
+  vi.stubEnv('VITE_DEMO_MODE', 'false');
 
-const sampleSummary: Log360Summary = {
-  configured: true,
-  ok: true,
-  productVersion: '3.2.1',
-  fetchedAt: '2026-05-08T00:00:00.000Z',
-  sources: {
-    total: 10,
-    online: 8,
-    offline: 1,
-    unknown: 1,
-    samples: [
-      { id: 's1', name: 'Collector-1', status: 'online', lastSeenAt: '2026-05-08T12:00:00.000Z' },
-    ],
-  },
-  alerts: {
-    total: 30,
-    open: 4,
-    closed: 26,
-    bySeverity: { high: 2, medium: 5, low: 10 },
-    samples: [
-      {
-        id: 'a1',
-        title: 'Suspicious login',
-        severity: 'high',
-        status: 'open',
-        createdAt: '2026-05-08T13:00:00.000Z',
+  useAuthStore.setState({
+    user: adminUser,
+    accessToken: 'token',
+    refreshToken: 'refresh',
+    status: 'authenticated',
+  });
+
+  useAppStore.setState({
+    connections: {
+      log360: {
+        connected: false,
+        serverUrl: '',
+        token: '',
+        useProxy: false,
+        connectedAt: null,
+        lastSync: null,
+        testing: false,
+        lastConnectionLatencyMs: undefined,
+        lastError: null,
       },
-    ],
-  },
-  retention: {
-    retentionDays: 180,
-    archiveEnabled: true,
-  },
-  score: {
-    overall: 91,
-    band: 'compliant',
-    breakdown: {
-      health: { score: 92, weight: 20, reason: 'Healthy' },
-      coverage: { score: 89, weight: 20, reason: 'Good coverage' },
-      detection: { score: 95, weight: 20, reason: 'Strong detection' },
-      response: { score: 90, weight: 20, reason: 'Prompt response' },
-      retention: { score: 88, weight: 20, reason: 'Retention in place' },
+      ad360: {
+        connected: false,
+        serverUrl: '',
+        token: '',
+        useProxy: false,
+        connectedAt: null,
+        lastSync: null,
+        testing: false,
+        lastConnectionLatencyMs: undefined,
+        lastError: null,
+      },
     },
-  },
-  errors: ['Alerts sample timeout'],
-};
+    log360Evidence: null,
+    evidenceErrors: {},
+    evidenceLoading: {},
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('Log360DetailPage', () => {
-  beforeEach(() => {
-    vi.stubEnv('VITE_API_BASE_URL', 'http://localhost:3001');
-    vi.stubEnv('VITE_DEMO_MODE', 'false');
-    useAuthStore.setState({
-      user: adminUser,
-      accessToken: 'token',
-      refreshToken: 'refresh',
-      status: 'authenticated',
-    });
-    vi.mocked(log360Api.health).mockResolvedValue(sampleHealth);
-    vi.mocked(log360Api.summary).mockResolvedValue(sampleSummary);
-  });
-
-  afterEach(() => {
-    vi.unstubAllEnvs();
-  });
-
-  it('renders all sections from summary data', async () => {
+  it('renders disconnected state', () => {
     render(
       <MemoryRouter>
         <Log360DetailPage />
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('Log360 Compliance')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('✅ Connected v3.2.1')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Score' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Alerts' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Retention' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Non-fatal errors' })).toBeInTheDocument();
-    expect(screen.getByText('Collector-1')).toBeInTheDocument();
-    expect(screen.getByText('Suspicious login')).toBeInTheDocument();
+    expect(screen.getByText('Log360 is not connected. Add your server URL and auth token in Connections.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Go to Connections' })).toHaveAttribute('href', '/connections');
   });
 
-  it('renders no credential configured state', async () => {
-    vi.mocked(log360Api.summary).mockResolvedValue({
-      ...sampleSummary,
-      configured: false,
-    });
+  it('renders live evidence metrics and endpoint diagnostics', () => {
+    useAppStore.setState((state) => ({
+      ...state,
+      connections: {
+        ...state.connections,
+        log360: {
+          ...state.connections.log360,
+          connected: true,
+        },
+      },
+      log360Evidence: {
+        ...SAMPLE_LOG360_EVIDENCE,
+        diagnostics: [
+          ...SAMPLE_LOG360_EVIDENCE.diagnostics,
+          {
+            key: 'retention-policy',
+            method: 'GET',
+            path: '/api/v2/retention-policy',
+            latencyMs: 33,
+            ok: false,
+            statusCode: 404,
+            statusText: '404 Not Found',
+            summary: 'Retention endpoint missing',
+            reason: 'not found',
+            unavailableOnBuild: true,
+          },
+        ],
+        partialSuccess: true,
+      },
+    }));
 
     render(
       <MemoryRouter>
@@ -133,10 +121,10 @@ describe('Log360DetailPage', () => {
       </MemoryRouter>,
     );
 
-    await waitFor(() => {
-      expect(screen.getByText('No Log360 credential configured. Add one in Admin → Credentials.')).toBeInTheDocument();
-    });
-    expect(screen.getByRole('link', { name: 'Go to Credentials' })).toHaveAttribute('href', '/admin/credentials');
+    expect(screen.getByText('Log360 Compliance')).toBeInTheDocument();
+    expect(screen.getByText('Endpoint diagnostics')).toBeInTheDocument();
+    expect(screen.getByText('Score based on 4 of 5 inputs — Retention unavailable.')).toBeInTheDocument();
+    expect(screen.getByText('Not collected yet')).toBeInTheDocument();
   });
 
   it('redirects non-admin away from /integrations/log360', () => {

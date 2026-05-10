@@ -70,6 +70,7 @@ const sampleEvidence: Evidence = {
   alerts: {
     total: 6,
   },
+  diagnostics: [],
   collectedAt: '2026-05-09T00:10:00.000Z',
   partialSuccess: false,
   errors: {},

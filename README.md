@@ -133,6 +133,11 @@ Production deployment must use one of:
 > Security note: storing raw bearer tokens in browser storage is MVP-only. Use a secure secrets vault/proxy in production.
 > Proxy security note: set `LOG360_PROXY_ALLOWLIST` (comma-separated `host:port`) so proxy requests are restricted to approved Log360 targets.
 
+Log360 integration docs:
+
+- [docs/log360-api-integration.md](./docs/log360-api-integration.md)
+- [docs/integrations/log360-v2-api-reference.md](./docs/integrations/log360-v2-api-reference.md)
+
 ---
 
 ## 🚀 First Run

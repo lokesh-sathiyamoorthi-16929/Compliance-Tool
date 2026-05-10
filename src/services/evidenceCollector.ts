@@ -2,6 +2,7 @@ import {
   Agent,
   Incident,
   Log360Client,
+  Log360ClientError,
   LogSource,
   ReportProfile,
 } from './log360Client';
@@ -13,6 +14,21 @@ export interface ReportSample {
   totalItems: number;
   sampleCount: number;
   latestTimestamp: string | null;
+}
+
+export interface EndpointSyncResult {
+  key: string;
+  method: 'GET' | 'POST';
+  path: string;
+  latencyMs: number;
+  ok: boolean;
+  statusCode?: number;
+  statusText: string;
+  summary: string;
+  reason?: string;
+  unavailableOnBuild?: boolean;
+  networkError?: boolean;
+  timeout?: boolean;
 }
 
 export interface EvidenceErrors {
@@ -57,6 +73,7 @@ export interface Evidence {
   alerts: {
     total: number;
   };
+  diagnostics: EndpointSyncResult[];
   collectedAt: string;
   partialSuccess: boolean;
   errors: EvidenceErrors;
@@ -132,6 +149,108 @@ function getErrorMessage(reason: unknown): string {
   return 'Unknown error';
 }
 
+function parseDiagnosticError(error: unknown): Pick<EndpointSyncResult, 'statusCode' | 'statusText' | 'reason' | 'unavailableOnBuild' | 'networkError' | 'timeout'> {
+  if (error instanceof Log360ClientError) {
+    if (error.kind === 'NETWORK_ERROR') {
+      return {
+        statusText: 'CORS blocked / network error',
+        reason: error.message,
+        networkError: true,
+      };
+    }
+
+    if (error.kind === 'TIMEOUT') {
+      return {
+        statusText: 'Timeout',
+        reason: error.message,
+        timeout: true,
+      };
+    }
+
+    if (error.status === 404) {
+      return {
+        statusCode: 404,
+        statusText: 'Not Found',
+        reason: error.message,
+        unavailableOnBuild: true,
+      };
+    }
+
+    const statusText = error.status
+      ? `${error.status} ${error.kind === 'UNAUTHORIZED' ? 'Unauthorized' : 'Error'}`
+      : error.kind;
+
+    return {
+      statusCode: error.status,
+      statusText,
+      reason: error.message,
+    };
+  }
+
+  if (error instanceof Error) {
+    return {
+      statusText: 'Error',
+      reason: error.message,
+    };
+  }
+
+  return {
+    statusText: 'Error',
+    reason: 'Unknown error',
+  };
+}
+
+type EndpointCallResult<T> = {
+  value?: T;
+  error?: unknown;
+  diagnostic: EndpointSyncResult;
+};
+
+async function callEndpoint<T>(params: {
+  key: string;
+  method: 'GET' | 'POST';
+  path: string;
+  summary: (value: T) => string;
+  fn: () => Promise<T>;
+}): Promise<EndpointCallResult<T>> {
+  const startedAt = performance.now();
+  try {
+    const value = await params.fn();
+    return {
+      value,
+      diagnostic: {
+        key: params.key,
+        method: params.method,
+        path: params.path,
+        latencyMs: Math.round(performance.now() - startedAt),
+        ok: true,
+        statusCode: 200,
+        statusText: '200 OK',
+        summary: params.summary(value),
+      },
+    };
+  } catch (error) {
+    const parsed = parseDiagnosticError(error);
+    return {
+      error,
+      diagnostic: {
+        key: params.key,
+        method: params.method,
+        path: params.path,
+        latencyMs: Math.round(performance.now() - startedAt),
+        ok: false,
+        statusCode: parsed.statusCode,
+        statusText: parsed.statusCode ? `${parsed.statusCode} ${parsed.statusText}` : parsed.statusText,
+        summary: parsed.reason ?? 'Request failed',
+        reason: parsed.reason,
+        unavailableOnBuild: parsed.unavailableOnBuild,
+        networkError: parsed.networkError,
+        timeout: parsed.timeout,
+      },
+    };
+  }
+}
+
 export async function collectEvidence(client: Log360Client): Promise<Evidence> {
   const collectedAt = new Date().toISOString();
 
@@ -142,37 +261,81 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
     profilesResult,
     incidentsResult,
     alertsResult,
-  ] = await Promise.allSettled([
-    client.getLogSources(),
-    client.getLogSourceGroups(),
-    client.getAgents(),
-    client.getReportProfiles({ from: 0, limit: 100 }),
-    client.getIncidents({ response_type: 'client' }),
-    client.getAlerts(),
+  ] = await Promise.all([
+    callEndpoint({
+      key: 'logSources',
+      method: 'GET',
+      path: '/api/v2/log-sources',
+      fn: () => client.getLogSources(),
+      summary: (items) => `${items.length} log sources`,
+    }),
+    callEndpoint({
+      key: 'logSourceGroups',
+      method: 'GET',
+      path: '/api/v2/log-sources/log-source-groups',
+      fn: () => client.getLogSourceGroups(),
+      summary: (items) => `${items.length} source groups`,
+    }),
+    callEndpoint({
+      key: 'agents',
+      method: 'GET',
+      path: '/api/v2/log-sources/agents',
+      fn: () => client.getAgents(),
+      summary: (items) => `${items.length} agents`,
+    }),
+    callEndpoint({
+      key: 'reportProfiles',
+      method: 'POST',
+      path: '/api/v2/report/profiles',
+      fn: () => client.getReportProfiles({ from: 0, limit: 100 }),
+      summary: () => 'report profiles loaded',
+    }),
+    callEndpoint({
+      key: 'incidents',
+      method: 'GET',
+      path: '/api/v2/incident?response_type=client',
+      fn: () => client.getIncidents({ response_type: 'client' }),
+      summary: (items) => `${items.length} incidents`,
+    }),
+    callEndpoint({
+      key: 'alerts',
+      method: 'GET',
+      path: '/api/v2/alerts',
+      fn: () => client.getAlerts(),
+      summary: (payload) => `${toArray((payload as { response?: unknown })?.response).length} alerts`,
+    }),
   ]);
+
+  const diagnostics: EndpointSyncResult[] = [
+    logSourcesResult.diagnostic,
+    groupsResult.diagnostic,
+    agentsResult.diagnostic,
+    profilesResult.diagnostic,
+    incidentsResult.diagnostic,
+    alertsResult.diagnostic,
+  ];
 
   const errors: EvidenceErrors = {};
 
-  const logSources = logSourcesResult.status === 'fulfilled' ? logSourcesResult.value : [];
-  if (logSourcesResult.status === 'rejected') errors.logSources = getErrorMessage(logSourcesResult.reason);
+  const logSources = logSourcesResult.value ?? [];
+  if (logSourcesResult.error) errors.logSources = getErrorMessage(logSourcesResult.error);
 
-  const groups = groupsResult.status === 'fulfilled' ? groupsResult.value : [];
-  if (groupsResult.status === 'rejected') errors.logSourceGroups = getErrorMessage(groupsResult.reason);
+  const groups = groupsResult.value ?? [];
+  if (groupsResult.error) errors.logSourceGroups = getErrorMessage(groupsResult.error);
 
-  const agents = agentsResult.status === 'fulfilled' ? agentsResult.value : [];
-  if (agentsResult.status === 'rejected') errors.agents = getErrorMessage(agentsResult.reason);
+  const agents = agentsResult.value ?? [];
+  if (agentsResult.error) errors.agents = getErrorMessage(agentsResult.error);
 
-  const modules =
-    profilesResult.status === 'fulfilled'
-      ? toArray<Record<string, unknown>>(profilesResult.value.response?.modules)
-      : [];
-  if (profilesResult.status === 'rejected') errors.reportProfiles = getErrorMessage(profilesResult.reason);
+  const modules = profilesResult.value
+    ? toArray<Record<string, unknown>>(profilesResult.value.response?.modules)
+    : [];
+  if (profilesResult.error) errors.reportProfiles = getErrorMessage(profilesResult.error);
 
-  const incidents = incidentsResult.status === 'fulfilled' ? incidentsResult.value : [];
-  if (incidentsResult.status === 'rejected') errors.incidents = getErrorMessage(incidentsResult.reason);
+  const incidents = incidentsResult.value ?? [];
+  if (incidentsResult.error) errors.incidents = getErrorMessage(incidentsResult.error);
 
-  const alertsPayload = alertsResult.status === 'fulfilled' ? alertsResult.value : undefined;
-  if (alertsResult.status === 'rejected') errors.alerts = getErrorMessage(alertsResult.reason);
+  const alertsPayload = alertsResult.value;
+  if (alertsResult.error) errors.alerts = getErrorMessage(alertsResult.error);
 
   const byType: Record<string, number> = {};
   for (const source of logSources) {
@@ -212,31 +375,39 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
       const report = findReportForKey(allProfiles, key);
       if (!report?.report_id) return null;
 
-      return client
-        .getReportData(report.report_id, {
+      return callEndpoint({
+        key: `reportData:${key}`,
+        method: 'POST',
+        path: `/api/v2/report/data/${report.report_id}`,
+        fn: () => client.getReportData(report.report_id, {
           startTime: start24h,
           endTime: end,
-        })
-        .then((data) => ({ key, report, data }))
-        .catch((error) => ({ key, report, error }));
+        }),
+        summary: (data) => {
+          const rows = toArray<Record<string, unknown>>(data.response);
+          return `${rows.length} rows for ${report.report_name}`;
+        },
+      }).then((result) => ({ key, report, result }));
     })
-    .filter(Boolean) as Array<Promise<{ key: string; report: ReportProfile; data?: { response?: unknown; meta?: { total_items?: number; items_in_current_page?: number } }; error?: unknown }>>;
+    .filter(Boolean) as Array<Promise<{ key: string; report: ReportProfile; result: EndpointCallResult<{ response?: unknown; meta?: { total_items?: number; items_in_current_page?: number } }> }>>;
 
   const reportResults = await Promise.all(reportPromises);
 
-  for (const result of reportResults) {
-    if (result.error) {
+  for (const reportResult of reportResults) {
+    diagnostics.push(reportResult.result.diagnostic);
+
+    if (reportResult.result.error || !reportResult.result.value) {
       errors.reports = errors.reports ?? 'Some report samples failed to load.';
       continue;
     }
 
-    const rows = toArray<Record<string, unknown>>(result.data?.response);
-    reportSamples[result.key] = {
-      reportId: result.report.report_id,
-      reportName: result.report.report_name,
-      uniqueKey: String(result.report.unique_key ?? result.key),
-      totalItems: Number(result.data?.meta?.total_items ?? rows.length ?? 0),
-      sampleCount: Math.min(100, Number(result.data?.meta?.items_in_current_page ?? rows.length ?? 0)),
+    const rows = toArray<Record<string, unknown>>(reportResult.result.value.response);
+    reportSamples[reportResult.key] = {
+      reportId: reportResult.report.report_id,
+      reportName: reportResult.report.report_name,
+      uniqueKey: String(reportResult.report.unique_key ?? reportResult.key),
+      totalItems: Number(reportResult.result.value.meta?.total_items ?? rows.length ?? 0),
+      sampleCount: Math.min(100, Number(reportResult.result.value.meta?.items_in_current_page ?? rows.length ?? 0)),
       latestTimestamp: pickLatestTimestamp(rows),
     };
   }
@@ -293,6 +464,7 @@ export async function collectEvidence(client: Log360Client): Promise<Evidence> {
     alerts: {
       total: alertItems.length,
     },
+    diagnostics,
     collectedAt,
     partialSuccess: hasErrors,
     errors,
