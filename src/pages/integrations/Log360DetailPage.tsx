@@ -19,6 +19,11 @@ function formatDate(value?: string) {
   return date.toLocaleString();
 }
 
+function normalizeWeightPercent(weight: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round(((weight / total) * 1000)) / 10;
+}
+
 export default function Log360DetailPage() {
   const [summary, setSummary] = useState<Log360Summary | null>(null);
   const [health, setHealth] = useState<Log360Health | null>(null);
@@ -167,7 +172,7 @@ export default function Log360DetailPage() {
                     <p className="text-sm font-semibold text-slate-900">{row.label}</p>
                     <p className="text-xs text-slate-600">
                       Score: <strong>{item.score}</strong> · Weight:{' '}
-                      <strong>{Math.round(((breakdownWeightTotal > 0 ? item.weight / breakdownWeightTotal : 0) * 1000)) / 10}%</strong>
+                      <strong>{normalizeWeightPercent(item.weight, breakdownWeightTotal)}%</strong>
                     </p>
                   </div>
                   <p className="mt-1 text-xs text-slate-600">{item.reason}</p>

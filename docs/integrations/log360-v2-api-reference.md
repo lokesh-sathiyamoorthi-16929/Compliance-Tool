@@ -24,15 +24,28 @@ The Log360 token is managed by the backend and never sent to the browser.
 
 ---
 
-## Log Fields
+## Metadata
 
 ### `GET /api/v2/meta/log-fields`
 
 Returns available log field definitions for building queries.
 
+This request is a `GET` with no request body.
+
 ### `GET /api/v2/meta/users`
 
 Returns metadata user records that can be referenced in filters.
+
+**Response:**
+```json
+{
+  "response": {
+    "users": [
+      { "user_id": "u1", "user_name": "admin" }
+    ]
+  }
+}
+```
 
 **Response:**
 ```json
@@ -147,9 +160,35 @@ Gets a single incident by ID.
 
 Returns active alerts.
 
+**Request body (example):**
+```json
+{
+  "from": 0,
+  "limit": 100
+}
+```
+
+**Response (example):**
+```json
+{
+  "response": [
+    { "id": "a1", "severity": "high", "status": "open", "title": "Suspicious login" }
+  ]
+}
+```
+
 ### `GET /api/v2/alerts/profile`
 
 Returns alert profile metadata used for response signal calculations.
+
+**Response (example):**
+```json
+{
+  "response": [
+    { "profile_id": "p1", "name": "Critical Alert Profile", "enabled": true }
+  ]
+}
+```
 
 ---
 
