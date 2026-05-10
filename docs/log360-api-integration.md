@@ -5,6 +5,7 @@
 1. Open **Connections** page.
 2. Enter:
    - Server URL (for example `http://lokesh-16929-t:8095`)
+   - Prefer HTTPS in production (for example `https://log360.example.com:8095`)
    - Client ID
    - Client Secret
    - Refresh Token

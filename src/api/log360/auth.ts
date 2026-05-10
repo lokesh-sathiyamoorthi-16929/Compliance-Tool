@@ -6,11 +6,15 @@ const TOKEN_STORAGE_KEY = 'complianceiq-log360-token-v2';
 let memoryToken: Log360SessionToken | null = null;
 
 function encodeObfuscated(value: string): string {
-  return btoa(unescape(encodeURIComponent(value)));
+  const encoded = new TextEncoder().encode(value);
+  const binary = Array.from(encoded, (byte) => String.fromCharCode(byte)).join('');
+  return btoa(binary);
 }
 
 function decodeObfuscated(value: string): string {
-  return decodeURIComponent(escape(atob(value)));
+  const binary = atob(value);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
 }
 
 export function saveObfuscatedConfig(config: Log360ConnectionConfig): void {

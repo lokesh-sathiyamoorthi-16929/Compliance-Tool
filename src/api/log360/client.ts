@@ -227,8 +227,14 @@ export class Log360ApiClient {
         }
 
         if (response.status === 429 && attempts < MAX_RETRY_ATTEMPTS) {
-          const retryAfter = Number(response.headers.get('Retry-After') ?? '2') * 1000;
-          await delay(Number.isFinite(retryAfter) ? retryAfter : 2000);
+          const retryHeader = response.headers.get('Retry-After');
+          const retrySeconds = retryHeader ? Number(retryHeader) : NaN;
+          const retryAfter = Number.isFinite(retrySeconds)
+            ? retrySeconds * 1000
+            : retryHeader
+              ? Math.max(0, new Date(retryHeader).getTime() - Date.now())
+              : 2000;
+          await delay(retryAfter || 2000);
           continue;
         }
 

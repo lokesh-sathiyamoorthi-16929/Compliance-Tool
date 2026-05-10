@@ -147,7 +147,10 @@ function normalizeType(source: LogSource): string {
 }
 
 function estimateInScopeCoverage(names: string[]): { scopedHosts: string[]; coveredHosts: string[]; coverageRatio: number } {
-  const scopedHosts = ['win-dc-01', 'sql-01', 'fw-edge-01'];
+  const configuredHosts = localStorage.getItem('complianceiq-in-scope-hosts');
+  const scopedHosts = configuredHosts
+    ? configuredHosts.split(',').map((host) => host.trim().toLowerCase()).filter(Boolean)
+    : names.map((name) => name.toLowerCase());
   const normalized = names.map((name) => name.toLowerCase());
   const coveredHosts = scopedHosts.filter((host) => normalized.some((name) => name.includes(host)));
   return {
@@ -155,6 +158,13 @@ function estimateInScopeCoverage(names: string[]): { scopedHosts: string[]; cove
     coveredHosts,
     coverageRatio: scopedHosts.length ? coveredHosts.length / scopedHosts.length : 0,
   };
+}
+
+function isWithinLast7Days(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return false;
+  return timestamp >= Date.now() - 7 * 24 * 60 * 60 * 1000;
 }
 
 export async function collectEvidence(log360: Log360ApiLike): Promise<Evidence> {
@@ -251,7 +261,11 @@ export async function collectEvidence(log360: Log360ApiLike): Promise<Evidence> 
     else openIncidents += 1;
   }
 
-  const criticalLast7d = alerts.filter((alert) => normalizeStatus((alert as { severity?: string }).severity) === 'critical').length;
+  const criticalLast7d = alerts.filter((alert) => {
+    const severity = normalizeStatus((alert as { severity?: string }).severity);
+    const createdTime = (alert as { created_time?: string }).created_time;
+    return severity === 'critical' && isWithinLast7Days(createdTime);
+  }).length;
   const logSourceNames = logSources.map((source) => String(source.log_source ?? source.id ?? 'unknown'));
   const inScopeCoverage = estimateInScopeCoverage(logSourceNames);
   const retentionDays = profiles.reduce((best, profile) => Math.max(best, Number(profile.retention_days ?? 0)), 0);
