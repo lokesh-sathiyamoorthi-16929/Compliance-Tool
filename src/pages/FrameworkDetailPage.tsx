@@ -24,6 +24,7 @@ import { getProductById } from '../data/manageEngineProducts';
 import ControlCard from '../components/ControlCard';
 import ValidationBadge from '../components/ValidationBadge';
 import NotFoundPage from './NotFoundPage';
+import { useAppStore } from '../store/useAppStore';
 
 const PRODUCT_ICONS: Record<string, typeof Package2> = {
   log360: ScrollText,
@@ -73,6 +74,7 @@ export default function FrameworkDetailPage() {
   const { id } = useParams<{ id: string }>();
   const framework = getFrameworkById(id ?? '');
   const controls = getControlsByFrameworkId(id ?? '');
+  const log360Connected = useAppStore((state) => state.connections.log360.connected);
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [scopeFilter, setScopeFilter] = useState<string>('all');
@@ -355,9 +357,9 @@ export default function FrameworkDetailPage() {
                 </div>
               </div>
             </div>
-            <Link to="/connections" className="btn-primary shrink-0">
+            <Link to={log360Connected ? '/dashboard' : '/connections'} className="btn-primary shrink-0">
               <Plug className="w-4 h-4" />
-              Connect & Score
+              {log360Connected ? 'Run Assessment' : 'Connect Log360 → Score'}
             </Link>
           </div>
         </div>
