@@ -15,7 +15,6 @@ const breakdownItems = [
   { key: 'coverage', label: 'Coverage' },
   { key: 'detection', label: 'Detection' },
   { key: 'response', label: 'Response' },
-  { key: 'retention', label: 'Retention' },
 ] as const;
 
 function getBandClasses(band: Log360Summary['score']['band']) {
@@ -47,7 +46,7 @@ export default function Log360ScoreCard({ state, summary, error, onRetry }: Log3
         <div className="h-4 w-40 rounded bg-slate-200" />
         <div className="mt-4 h-10 w-20 rounded bg-slate-200" />
         <div className="mt-4 space-y-2">
-          {[...Array(5)].map((_, idx) => (
+          {[...Array(4)].map((_, idx) => (
             <div key={idx} className="h-3 w-full rounded bg-slate-200" />
           ))}
         </div>

@@ -25,48 +25,6 @@ import { scoreFramework } from '../engine/scoringEngine';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
-const demoLog360Summary: Log360Summary = {
-  configured: true,
-  ok: true,
-  productVersion: 'Demo 1.0.0',
-  fetchedAt: new Date().toISOString(),
-  sources: {
-    total: 12,
-    online: 10,
-    offline: 1,
-    unknown: 1,
-    samples: [],
-  },
-  alerts: {
-    total: 26,
-    open: 8,
-    closed: 18,
-    bySeverity: {
-      low: 5,
-      medium: 9,
-      high: 7,
-      critical: 5,
-    },
-    samples: [],
-  },
-  retention: {
-    retentionDays: 180,
-    archiveEnabled: true,
-  },
-  score: {
-    overall: 78,
-    breakdown: {
-      health: { score: 82, weight: 20, reason: 'Connection and API checks are mostly stable.' },
-      coverage: { score: 75, weight: 20, reason: 'Some monitored sources remain offline.' },
-      detection: { score: 80, weight: 20, reason: 'Alert detection is active across key sources.' },
-      response: { score: 72, weight: 20, reason: 'Open alert backlog should be reduced.' },
-      retention: { score: 81, weight: 20, reason: 'Retention policy is configured with archive enabled.' },
-    },
-    band: 'attention',
-  },
-  errors: [],
-};
-
 function toast(msg: string) {
   // Simple toast using alert for MVP
   alert(msg);
@@ -153,9 +111,9 @@ export default function DashboardPage() {
     if (!canShowLog360Card) return;
 
     if (demoMode) {
-      setLog360Summary(demoLog360Summary);
+      setLog360Summary(undefined);
       setLog360Error('');
-      setLog360CardState('ok');
+      setLog360CardState('not-configured');
       return;
     }
 

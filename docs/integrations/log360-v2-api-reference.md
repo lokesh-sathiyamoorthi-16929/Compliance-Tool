@@ -7,6 +7,8 @@
 > `GET ${API_BASE}/integrations/log360/proxy/api/v2/log-sources`  
 >
 > The backend proxy attaches the stored Log360 auth token server-side before forwarding.
+>
+> This document lists the Log360 v2 endpoints used by ComplianceIQ. Retention/archive settings are intentionally not consumed because no public v2 endpoint exposes them — fabricating a value would violate our "no fake data" rule.
 
 ---
 
@@ -24,11 +26,13 @@ The Log360 token is managed by the backend and never sent to the browser.
 
 ## Log Fields
 
-### `POST /api/v2/meta/log-fields`
+### `GET /api/v2/meta/log-fields`
 
 Returns available log field definitions for building queries.
 
-**Request body:** `{}` (empty)
+### `GET /api/v2/meta/users`
+
+Returns metadata user records that can be referenced in filters.
 
 **Response:**
 ```json
@@ -139,9 +143,13 @@ Gets a single incident by ID.
 
 ## Alerts
 
-### `GET /api/v2/alerts`
+### `POST /api/v2/alerts`
 
 Returns active alerts.
+
+### `GET /api/v2/alerts/profile`
+
+Returns alert profile metadata used for response signal calculations.
 
 ---
 

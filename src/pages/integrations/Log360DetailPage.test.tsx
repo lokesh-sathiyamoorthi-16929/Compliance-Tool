@@ -64,19 +64,14 @@ const sampleSummary: Log360Summary = {
       },
     ],
   },
-  retention: {
-    retentionDays: 180,
-    archiveEnabled: true,
-  },
   score: {
     overall: 91,
     band: 'compliant',
     breakdown: {
-      health: { score: 92, weight: 20, reason: 'Healthy' },
-      coverage: { score: 89, weight: 20, reason: 'Good coverage' },
-      detection: { score: 95, weight: 20, reason: 'Strong detection' },
-      response: { score: 90, weight: 20, reason: 'Prompt response' },
-      retention: { score: 88, weight: 20, reason: 'Retention in place' },
+      health: { score: 92, weight: 0.25, reason: 'Healthy' },
+      coverage: { score: 89, weight: 0.25, reason: 'Good coverage' },
+      detection: { score: 95, weight: 0.25, reason: 'Strong detection' },
+      response: { score: 90, weight: 0.25, reason: 'Prompt response' },
     },
   },
   errors: ['Alerts sample timeout'],
@@ -115,10 +110,20 @@ describe('Log360DetailPage', () => {
     expect(screen.getByRole('heading', { name: 'Score' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Sources' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Alerts' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Retention' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Non-fatal errors' })).toBeInTheDocument();
+    expect(screen.queryByText(/Retention/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Archive (enabled|disabled)/i)).not.toBeInTheDocument();
     expect(screen.getByText('Collector-1')).toBeInTheDocument();
     expect(screen.getByText('Suspicious login')).toBeInTheDocument();
+  });
+
+  it('uses four score inputs with normalized weights summing to 1.0 and no retention key', () => {
+    const keys = Object.keys(sampleSummary.score.breakdown);
+    expect(keys).toEqual(['health', 'coverage', 'detection', 'response']);
+    expect(keys).not.toContain('retention');
+
+    const weightTotal = Object.values(sampleSummary.score.breakdown).reduce((sum, item) => sum + item.weight, 0);
+    expect(weightTotal).toBe(1);
   });
 
   it('renders no credential configured state', async () => {
@@ -160,5 +165,27 @@ describe('Log360DetailPage', () => {
 
     expect(screen.getByText('Dashboard Page')).toBeInTheDocument();
     expect(screen.queryByText('Log360 Compliance')).not.toBeInTheDocument();
+  });
+
+  it('shows honest error state without placeholder retention/archive literals', async () => {
+    vi.mocked(log360Api.health).mockRejectedValue(new Error('Health unavailable'));
+    vi.mocked(log360Api.summary).mockRejectedValue(new Error('Summary unavailable'));
+
+    render(
+      <MemoryRouter>
+        <Log360DetailPage />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Log360 Compliance')).toBeInTheDocument();
+      expect(screen.getByText('Failed to load Log360 integration details.')).toBeInTheDocument();
+    });
+
+    const pageText = document.body.textContent ?? '';
+    expect(pageText).not.toContain('180');
+    expect(pageText).not.toContain('Archive enabled');
+    expect(pageText).not.toContain('Archive disabled');
+    expect(pageText).not.toMatch(/Score:\s*[1-9]\d*/i);
   });
 });

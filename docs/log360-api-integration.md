@@ -76,6 +76,21 @@ The ComplianceIQ JWT is attached by `apiRequest`. The Log360 auth token is attac
 
 ---
 
+## Log360 Score Inputs (No Placeholder Metrics)
+
+ComplianceIQ measures four Log360 API-backed signals only:
+
+| Metric | Source endpoint | Weight |
+|--------|------------------|--------|
+| Health | `GET /api/v2/meta/log-fields` | `0.25` |
+| Coverage | `GET /api/v2/log-sources` | `0.25` |
+| Detection | `POST /api/v2/alerts` | `0.25` |
+| Response | `GET /api/v2/alerts/profile` | `0.25` |
+
+Retention and archive settings are not exposed by the public Log360 v2 API and are therefore not measured.
+
+---
+
 ## Error Codes
 
 | Backend error code | HTTP status | User-facing message | `Log360ErrorKind` |
