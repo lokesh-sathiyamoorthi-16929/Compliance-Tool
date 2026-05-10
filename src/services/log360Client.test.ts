@@ -27,17 +27,6 @@ describe('Log360Client', () => {
     const [path, options] = apiRequestMock.mock.calls[0];
     expect(path).toBe('/integrations/log360/proxy/api/v2/meta/log-fields');
     expect((options as { method?: string })?.method).toBe('GET');
-  });
-
-  it('getLogFields() uses GET with no body', async () => {
-    apiRequestMock.mockResolvedValue({ response: { log_fields: [{ field_name: 'host' }] } });
-
-    const log360 = new Log360Client();
-    await log360.getLogFields();
-
-    const [path, options] = apiRequestMock.mock.calls[0];
-    expect(path).toBe('/integrations/log360/proxy/api/v2/meta/log-fields');
-    expect((options as { method?: string })?.method).toBe('GET');
     expect((options as { body?: unknown })?.body).toBeUndefined();
   });
 
