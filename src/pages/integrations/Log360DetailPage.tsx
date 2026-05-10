@@ -140,8 +140,8 @@ export default function Log360DetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {log360Evidence.diagnostics.map((entry) => (
-                  <tr key={`${entry.key}:${entry.path}`} className="border-b border-slate-100">
+                {log360Evidence.diagnostics.map((entry, index) => (
+                  <tr key={`${entry.key}:${entry.path}:${index}`} className="border-b border-slate-100">
                     <td className="px-2 py-2 font-mono text-xs">{entry.method} {entry.path}</td>
                     <td className="px-2 py-2">{entry.statusText}</td>
                     <td className="px-2 py-2">{entry.latencyMs}ms</td>

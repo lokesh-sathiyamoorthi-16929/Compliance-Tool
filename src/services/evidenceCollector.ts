@@ -176,9 +176,7 @@ function parseDiagnosticError(error: unknown): Pick<EndpointSyncResult, 'statusC
       };
     }
 
-    const statusText = error.status
-      ? `${error.status} ${error.kind === 'UNAUTHORIZED' ? 'Unauthorized' : 'Error'}`
-      : error.kind;
+    const statusText = error.kind === 'UNAUTHORIZED' ? 'Unauthorized' : 'Error';
 
     return {
       statusCode: error.status,

@@ -31,5 +31,5 @@ Authorization: Bearer <token>
 
 ## Reference
 
-- Detailed endpoint reference: [docs/integrations/log360-v2-api-reference.md](./integrations/log360-v2-api-reference.md)
+- Detailed endpoint reference: [./integrations/log360-v2-api-reference.md](./integrations/log360-v2-api-reference.md)
 - Official API docs: https://www.manageengine.com/products/eventlog/api/v2/

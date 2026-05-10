@@ -98,7 +98,7 @@ describe('ConnectionsPage', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByText('Sync Diagnostics (1 endpoints)')).toBeInTheDocument();
+    expect(screen.getByText('Sync Diagnostics (1 endpoint)')).toBeInTheDocument();
     expect(screen.getByText('GET /api/v2/log-sources')).toBeInTheDocument();
     expect(screen.getByText('CORS blocked / network error')).toBeInTheDocument();
   });

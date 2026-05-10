@@ -200,7 +200,7 @@ export default function ConnectionsPage() {
             {log360Evidence?.diagnostics?.length ? (
               <details className="rounded-lg border border-slate-200 bg-slate-50">
                 <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700">
-                  Sync Diagnostics ({log360Evidence.diagnostics.length} endpoints)
+                  Sync Diagnostics ({log360Evidence.diagnostics.length} {log360Evidence.diagnostics.length === 1 ? 'endpoint' : 'endpoints'})
                 </summary>
                 <div className="overflow-x-auto border-t border-slate-200">
                   <table className="w-full text-sm">
@@ -213,8 +213,8 @@ export default function ConnectionsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {log360Evidence.diagnostics.map((entry) => (
-                        <tr key={`${entry.key}:${entry.path}`} className="border-t border-slate-200">
+                      {log360Evidence.diagnostics.map((entry, index) => (
+                        <tr key={`${entry.key}:${entry.path}:${index}`} className="border-t border-slate-200">
                           <td className="px-3 py-2 font-mono text-xs">{entry.method} {entry.path}</td>
                           <td className="px-3 py-2">{entry.statusText}</td>
                           <td className="px-3 py-2">{entry.latencyMs}ms</td>
@@ -235,7 +235,7 @@ export default function ConnectionsPage() {
                 type="text"
                 value={serverUrl}
                 onChange={(e) => setServerUrl(e.target.value)}
-                placeholder="http://lokesh-16929-t:8095"
+                placeholder="https://log360.yourcompany.com:8400"
                 className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
