@@ -77,6 +77,7 @@ export default function FrameworkDetailPage() {
   const framework = getFrameworkById(id ?? '');
   const controls = getControlsByFrameworkId(id ?? '');
   const { log360Evidence, connections, attestations } = useAppStore();
+  const log360Connected = connections.log360.connected;
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [scopeFilter, setScopeFilter] = useState<string>('all');
@@ -377,9 +378,9 @@ export default function FrameworkDetailPage() {
                 ) : null}
               </div>
             </div>
-            <Link to="/connections" className="btn-primary shrink-0">
+            <Link to={log360Connected ? '/dashboard' : '/connections'} className="btn-primary shrink-0">
               <Plug className="w-4 h-4" />
-              Connect & Score
+              {log360Connected ? 'Run Assessment' : 'Connect Log360 → Score'}
             </Link>
           </div>
         </div>
