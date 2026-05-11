@@ -68,6 +68,7 @@ export default function App() {
           <Route element={<ProtectedRoute requireRole="admin" />}>
             <Route path="admin/users" element={<UsersPage />} />
             <Route path="admin/credentials" element={<CredentialsPage />} />
+            <Route path="profile/credentials" element={<CredentialsPage />} />
             <Route
               path="integrations/log360"
               element={isDemoMode() ? <Navigate to="/dashboard" replace /> : <Log360DetailPage />}

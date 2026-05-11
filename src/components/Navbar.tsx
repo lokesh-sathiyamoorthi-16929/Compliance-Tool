@@ -75,7 +75,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
 
   const goToCredentials = () => {
     setMenuOpen(false);
-    navigate('/admin/credentials');
+    navigate('/profile/credentials');
   };
 
   const goToLog360 = () => {
@@ -164,7 +164,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                       >
                         <Key className="h-4 w-4" />
-                        Credentials
+                        API Credentials
                       </button>
                       <button
                         type="button"
