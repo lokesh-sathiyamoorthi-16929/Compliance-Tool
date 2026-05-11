@@ -30,7 +30,8 @@ export default function ControlCard({ control, score, onAttest }: Props) {
     [control.frameworkId],
   );
 
-  const showScoringCta = control.frameworkId === 'hipaa' || control.frameworkId === 'iso27001';
+  const showFrameworkActions = control.frameworkId === 'hipaa' || control.frameworkId === 'iso27001';
+  const showStandaloneAttestButton = !showFrameworkActions && Boolean(onAttest);
 
   const deriveControlState = useCallback((evidence: Evidence) => {
     if (!liveStateFramework) return null;
@@ -158,12 +159,12 @@ export default function ControlCard({ control, score, onAttest }: Props) {
               <p className="text-xs text-slate-500">Weight</p>
               <p className="font-bold text-slate-900">{control.weight}/5</p>
             </div>
-            {!showScoringCta && onAttest ? (
+            {showStandaloneAttestButton ? (
               <button
                 type="button"
                 onClick={(event) => {
                   event.stopPropagation();
-                  onAttest(control);
+                  onAttest?.(control);
                 }}
                 className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
               >
@@ -178,7 +179,7 @@ export default function ControlCard({ control, score, onAttest }: Props) {
           </div>
         </div>
       </button>
-      {showScoringCta ? (
+      {showFrameworkActions ? (
         <div className="border-t border-slate-100 bg-white px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             {!connected ? (
