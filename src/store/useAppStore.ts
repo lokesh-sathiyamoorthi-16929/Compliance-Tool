@@ -71,7 +71,7 @@ function loadPersistedAttestations(): Record<string, Attestation[]> {
     const raw = window.localStorage.getItem(ATTESTATION_STORAGE_KEY);
     if (!raw) return {};
     const parsed = JSON.parse(raw) as Record<string, Attestation[]>;
-    return parsed ?? {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
     return {};
   }

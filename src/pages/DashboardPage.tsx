@@ -84,9 +84,19 @@ export default function DashboardPage() {
     }
     if (!liveScoring) return null;
 
-    const passed = liveScoring.controls.filter((control) => control.normalizedScore >= 80).length;
-    const failed = liveScoring.controls.filter((control) => control.normalizedScore < 40).length;
-    const partial = liveScoring.controls.filter((control) => control.normalizedScore >= 40 && control.normalizedScore < 80).length;
+    const { passed, failed, partial } = liveScoring.controls.reduce(
+      (counts, control) => {
+        if (control.normalizedScore >= 80) {
+          counts.passed += 1;
+        } else if (control.normalizedScore < 40) {
+          counts.failed += 1;
+        } else {
+          counts.partial += 1;
+        }
+        return counts;
+      },
+      { passed: 0, failed: 0, partial: 0 },
+    );
     const notApplicable = 0;
 
     const controlCountByTheme = new Map<string, number>();

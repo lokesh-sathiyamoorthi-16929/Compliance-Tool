@@ -1,6 +1,6 @@
 import { Framework } from '../types';
 
-export const frameworks: Framework[] = [
+const frameworkRecords: Framework[] = [
   {
     id: 'hipaa',
     name: 'HIPAA',
@@ -286,9 +286,10 @@ export const frameworks: Framework[] = [
   },
 ];
 
-frameworks.forEach((framework) => {
-  framework.rubric = framework.rubric ?? 'legacy';
-});
+export const frameworks: Framework[] = frameworkRecords.map((framework) => ({
+  ...framework,
+  rubric: framework.rubric ?? 'legacy',
+}));
 
 export const getFrameworkById = (id: string): Framework | undefined =>
   frameworks.find((f) => f.id === id);
