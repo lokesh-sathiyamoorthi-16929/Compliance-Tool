@@ -27,6 +27,11 @@ const configuredCreds: integrations.Log360Credentials = {
   hasToken: true,
   updatedAt: '2026-05-10T00:00:00.000Z',
 };
+const adNotConfiguredCreds: integrations.Ad360Credentials = {
+  configured: false,
+  hasToken: false,
+  useProxy: true,
+};
 const connectionOk = { success: true, latencyMs: 42, fieldCount: 12 };
 const connectionFailed = {
   success: false,
@@ -76,6 +81,9 @@ describe('ConnectionsPage', () => {
       },
     });
     localStorage.clear();
+    vi.mocked(integrations.ad360CredentialsApi.get).mockResolvedValue(adNotConfiguredCreds);
+    vi.mocked(integrations.ad360CredentialsApi.save).mockResolvedValue(undefined);
+    vi.mocked(integrations.ad360CredentialsApi.delete).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -89,14 +97,14 @@ describe('ConnectionsPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Loading connection status…')).toBeInTheDocument();
+    expect(screen.getAllByText('Loading connection status…').length).toBeGreaterThan(0);
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Server URL')).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Server URL').length).toBeGreaterThan(0);
     });
-    expect(screen.getByLabelText('Auth Token')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
-    expect(screen.queryByText(/use proxy/i)).not.toBeInTheDocument();
+    expect(screen.getAllByLabelText('Auth Token').length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('button', { name: /save/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText(/Use Proxy/i)).toBeInTheDocument();
   });
 
   it('save flow calls PUT credentials with correct body and clears token field', async () => {
@@ -108,16 +116,16 @@ describe('ConnectionsPage', () => {
 
     renderPage();
 
-    await waitFor(() => screen.getByLabelText('Server URL'));
+    await waitFor(() => expect(screen.getAllByLabelText('Server URL').length).toBeGreaterThan(0));
 
-    fireEvent.change(screen.getByLabelText('Server URL'), {
+    fireEvent.change(screen.getAllByLabelText('Server URL')[0], {
       target: { value: 'http://log360.example.com:8095' },
     });
-    fireEvent.change(screen.getByLabelText('Auth Token'), {
+    fireEvent.change(screen.getAllByLabelText('Auth Token')[0], {
       target: { value: 'super-secret-token' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /save/i })[0]);
 
     await waitFor(() => {
       expect(integrations.log360CredentialsApi.save).toHaveBeenCalledWith({
@@ -144,15 +152,15 @@ describe('ConnectionsPage', () => {
 
     renderPage();
 
-    await waitFor(() => screen.getByLabelText('Server URL'));
+    await waitFor(() => expect(screen.getAllByLabelText('Server URL').length).toBeGreaterThan(0));
 
-    fireEvent.change(screen.getByLabelText('Server URL'), {
+    fireEvent.change(screen.getAllByLabelText('Server URL')[0], {
       target: { value: 'http://log360.example.com:8095' },
     });
-    fireEvent.change(screen.getByLabelText('Auth Token'), {
+    fireEvent.change(screen.getAllByLabelText('Auth Token')[0], {
       target: { value: 'super-secret-token' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+    fireEvent.click(screen.getAllByRole('button', { name: /save/i })[0]);
 
     await waitFor(() => expect(integrations.log360CredentialsApi.save).toHaveBeenCalled());
 
@@ -208,7 +216,7 @@ describe('ConnectionsPage', () => {
 
     // After disconnect, form returns to not-configured state
     await waitFor(() => {
-      expect(screen.getByLabelText('Server URL')).toBeInTheDocument();
+      expect(screen.getAllByLabelText('Server URL').length).toBeGreaterThan(0);
     });
   });
 
@@ -222,19 +230,19 @@ describe('ConnectionsPage', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /replace token/i }));
 
-    expect(screen.getByLabelText('Auth Token')).toBeInTheDocument();
+    expect(screen.getAllByLabelText('Auth Token').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
   });
 
-  it('"Use proxy" checkbox is absent', async () => {
+  it('shows AD360 use proxy checkbox', async () => {
     vi.mocked(integrations.log360CredentialsApi.get).mockResolvedValue(notConfiguredCreds);
 
     renderPage();
 
-    await waitFor(() => screen.getByLabelText('Server URL'));
+    await waitFor(() => expect(screen.getAllByLabelText('Server URL').length).toBeGreaterThan(0));
 
-    expect(screen.queryByText(/use proxy/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+    expect(screen.getByText(/use proxy/i)).toBeInTheDocument();
+    expect(screen.getByRole('checkbox')).toBeInTheDocument();
   });
 });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mapEvidenceToControlEvidence } from '../evidenceMapping';
 import type { Evidence } from '../../../services/evidenceCollector';
 import { scoreFramework } from '../index';
+import type { Ad360SummaryResponse } from '../../../types/ad360';
 
 const sampleEvidence: Evidence = {
   logSources: { count: 2, byType: { windows: 2 }, names: ['dc-1', 'ehr-1'], items: [] },
@@ -14,6 +15,20 @@ const sampleEvidence: Evidence = {
   collectedAt: new Date().toISOString(),
   partialSuccess: false,
   errors: {},
+};
+
+const ad360PassingSummary: Ad360SummaryResponse = {
+  users: { total: 100, disabled: 5, lockedOut: 2, neverExpiringPassword: 0 },
+  privilegedUsers: { count: 8, samNames: ['admin1'], smartCardPct: 80 },
+  staleAccounts: { count: 2, samNames: ['old.user'] },
+  computers: { total: 50, bitlockerEnabledPct: 95, osDistribution: { 'Windows 11': 30 } },
+};
+
+const ad360FailingSummary: Ad360SummaryResponse = {
+  users: { total: 100, disabled: 5, lockedOut: 20, neverExpiringPassword: 7 },
+  privilegedUsers: { count: 25, samNames: ['admin1'], smartCardPct: 20 },
+  staleAccounts: { count: 20, samNames: ['old.user'] },
+  computers: { total: 50, bitlockerEnabledPct: 40, osDistribution: { 'Windows 11': 30 } },
 };
 
 describe('evidenceMapping', () => {
@@ -61,5 +76,18 @@ describe('evidenceMapping', () => {
 
     const control = mapped.find((row) => row.controlId === 'HIPAA-164.312(a)(2)(iii)');
     expect(control?.attestations).toHaveLength(0);
+  });
+
+  it('applies AD360 posture rules to mapped HIPAA/ISO controls', () => {
+    const passing = mapEvidenceToControlEvidence('hipaa', sampleEvidence, {}, new Date().toISOString(), ad360PassingSummary);
+    const failing = mapEvidenceToControlEvidence('hipaa', sampleEvidence, {}, new Date().toISOString(), ad360FailingSummary);
+    const isoPassing = mapEvidenceToControlEvidence('iso27001', sampleEvidence, {}, new Date().toISOString(), ad360PassingSummary);
+
+    expect(passing.find((row) => row.controlId === 'HIPAA-164.308(a)(3)')?.automated.some((item) => item.source === 'ad360' && item.status === 'success')).toBe(true);
+    expect(failing.find((row) => row.controlId === 'HIPAA-164.308(a)(3)')?.automated.some((item) => item.source === 'ad360' && item.status === 'failed')).toBe(true);
+    expect(passing.find((row) => row.controlId === 'HIPAA-164.308(a)(4)')?.automated.some((item) => item.source === 'ad360' && item.status === 'success')).toBe(true);
+    expect(passing.find((row) => row.controlId === 'HIPAA-164.310')?.automated.some((item) => item.source === 'ad360' && item.status === 'success')).toBe(true);
+    expect(passing.find((row) => row.controlId === 'HIPAA-164.312(d)')?.automated.some((item) => item.source === 'ad360' && item.status === 'success')).toBe(true);
+    expect(isoPassing.find((row) => row.controlId === 'ISO-A.5.15')?.automated.some((item) => item.source === 'ad360' && item.status === 'success')).toBe(true);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -21,6 +21,8 @@ import { useAuthStore } from '../store/useAuthStore';
 import { scoreFramework, type FrameworkScore } from '../engine/scoring';
 import { useLog360Evidence } from '../hooks/useLog360Evidence';
 import type { MockScoreData, RemediationAction } from '../types';
+import Ad360PostureCard from '../components/Ad360PostureCard';
+import { Ad360Client } from '../services/ad360Client';
 
 const PIE_COLORS = ['#22c55e', '#ef4444', '#f97316', '#94a3b8'];
 
@@ -70,13 +72,15 @@ export default function DashboardPage() {
   const [exportingReport, setExportingReport] = useState<'executive' | 'auditor' | null>(null);
   const [showScoreHelp, setShowScoreHelp] = useState(false);
   const [openRawWidget, setOpenRawWidget] = useState<string | null>(null);
+  const [adLoading, setAdLoading] = useState(false);
+  const [adError, setAdError] = useState('');
 
-  const { connections, log360Evidence, attestations } = useAppStore();
+  const { connections, log360Evidence, attestations, ad360Summary, setAd360Summary } = useAppStore();
   const demoMode = isDemoMode();
   const liveScoring = useMemo(() => {
     if (!log360Evidence || !connections.log360.connected) return null;
-    return scoreFramework(selectedFrameworkId, log360Evidence, { attestations });
-  }, [attestations, connections.log360.connected, log360Evidence, selectedFrameworkId]);
+    return scoreFramework(selectedFrameworkId, log360Evidence, { attestations, ad360Summary });
+  }, [ad360Summary, attestations, connections.log360.connected, log360Evidence, selectedFrameworkId]);
 
   const scoreData = useMemo<MockScoreData | null>(() => {
     if (demoMode) {
@@ -126,6 +130,7 @@ export default function DashboardPage() {
 
   const framework = frameworks.find((f) => f.id === selectedFrameworkId);
   const hasLog360Connection = connections.log360.connected || Boolean(connections.log360.serverUrl) || Boolean(log360Evidence);
+  const hasAd360Connection = connections.ad360.connected || Boolean(connections.ad360.serverUrl);
   const anyConnected = hasLog360Connection || connections.ad360.connected;
   const canShowLog360Card = demoMode || user?.role === 'admin' || hasLog360Connection;
   const { overview: log360Summary, loading: log360Loading, error: log360Error, refresh: refreshLog360Evidence } = useLog360Evidence({
@@ -140,6 +145,31 @@ export default function DashboardPage() {
         : log360Summary
           ? 'ok'
           : 'error';
+
+  useEffect(() => {
+    if (demoMode || !hasAd360Connection) {
+      setAd360Summary(null);
+      setAdLoading(false);
+      setAdError('');
+      return;
+    }
+
+    const load = async () => {
+      setAdLoading(true);
+      setAdError('');
+      try {
+        const summary = await new Ad360Client().getSummary();
+        setAd360Summary(summary);
+      } catch (error) {
+        setAd360Summary(null);
+        setAdError(error instanceof Error ? error.message : 'Failed to load AD360 summary.');
+      } finally {
+        setAdLoading(false);
+      }
+    };
+
+    void load();
+  }, [demoMode, hasAd360Connection, setAd360Summary]);
 
   const pieData = scoreData
     ? [
@@ -303,6 +333,12 @@ export default function DashboardPage() {
               void refreshLog360Evidence();
             }}
           />
+        </div>
+      ) : null}
+
+      {!demoMode && hasAd360Connection ? (
+        <div className="mb-6">
+          <Ad360PostureCard loading={adLoading} error={adError} summary={ad360Summary} />
         </div>
       ) : null}
 

@@ -7,8 +7,9 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { collectEvidence } from '../services/evidenceCollector';
 import { Log360Client, type TestConnectionResult } from '../services/log360Client';
-import { log360CredentialsApi } from '../api/integrations';
-import type { Log360Credentials } from '../api/integrations';
+import { Ad360Client } from '../services/ad360Client';
+import { ad360CredentialsApi, log360CredentialsApi } from '../api/integrations';
+import type { Ad360Credentials, Log360Credentials } from '../api/integrations';
 import { ApiError } from '../api/client';
 
 function mapApiError(error: unknown): string {
@@ -44,16 +45,32 @@ export default function ConnectionsPage() {
   const [saveError, setSaveError] = useState('');
   const [disconnecting, setDisconnecting] = useState(false);
 
+  const [adServerUrl, setAdServerUrl] = useState('');
+  const [adToken, setAdToken] = useState('');
+  const [adDefaultDomain, setAdDefaultDomain] = useState('');
+  const [adUseProxy, setAdUseProxy] = useState(true);
+  const [showAdTokenField, setShowAdTokenField] = useState(false);
+  const [adCredentials, setAdCredentials] = useState<Ad360Credentials | null>(null);
+  const [adConnectionTest, setAdConnectionTest] = useState<{ ok: boolean; error?: string } | null>(null);
+  const [adSaving, setAdSaving] = useState(false);
+  const [adSaveError, setAdSaveError] = useState('');
+  const [adDisconnecting, setAdDisconnecting] = useState(false);
+
   const anyConnected = connections.log360.connected || connections.ad360.connected;
 
   const loadStatus = async () => {
     setLoadingStatus(true);
     setSaveError('');
+    setAdSaveError('');
 
     try {
-      const creds = await log360CredentialsApi.get();
+      const [creds, adCreds] = await Promise.all([log360CredentialsApi.get(), ad360CredentialsApi.get()]);
       setCredentials(creds);
       setServerUrl(creds.baseUrl ?? '');
+      setAdCredentials(adCreds);
+      setAdServerUrl(adCreds.baseUrl ?? '');
+      setAdDefaultDomain(adCreds.defaultDomain ?? '');
+      setAdUseProxy(adCreds.useProxy ?? true);
 
       if (creds.configured) {
         try {
@@ -76,6 +93,28 @@ export default function ConnectionsPage() {
       } else {
         setConnectionTest(null);
         updateConnection('log360', { connected: false, serverUrl: '' });
+      }
+
+      if (adCreds.configured) {
+        try {
+          const adHealth = await new Ad360Client().testConnection();
+          setAdConnectionTest(adHealth);
+          updateConnection('ad360', {
+            connected: adHealth.ok,
+            serverUrl: adCreds.baseUrl ?? '',
+            lastError: adHealth.ok ? null : (adHealth.error ?? 'Connection test failed'),
+          });
+        } catch (err) {
+          setAdConnectionTest(null);
+          updateConnection('ad360', {
+            connected: false,
+            serverUrl: adCreds.baseUrl ?? '',
+            lastError: mapApiError(err),
+          });
+        }
+      } else {
+        setAdConnectionTest(null);
+        updateConnection('ad360', { connected: false, serverUrl: '' });
       }
     } catch (err) {
       setSaveError(mapApiError(err));
@@ -166,7 +205,68 @@ export default function ConnectionsPage() {
     }
   };
 
+  const handleAdSave = async () => {
+    if (!adServerUrl || !adToken || !adDefaultDomain) return;
+    setAdSaving(true);
+    setAdSaveError('');
+
+    try {
+      await ad360CredentialsApi.save({
+        baseUrl: adServerUrl,
+        authToken: adToken,
+        defaultDomain: adDefaultDomain,
+        useProxy: adUseProxy,
+      });
+      setAdToken('');
+      setShowAdTokenField(false);
+      await loadStatus();
+    } catch (err) {
+      setAdSaveError(mapApiError(err));
+    } finally {
+      setAdSaving(false);
+    }
+  };
+
+  const handleAdTestConnection = async () => {
+    updateConnection('ad360', { testing: true, lastError: null });
+    try {
+      const result = await new Ad360Client().testConnection();
+      setAdConnectionTest(result);
+      updateConnection('ad360', {
+        testing: false,
+        connected: result.ok,
+        lastError: result.ok ? null : (result.error ?? 'Connection test failed'),
+      });
+    } catch (err) {
+      updateConnection('ad360', {
+        testing: false,
+        connected: false,
+        lastError: mapApiError(err),
+      });
+    }
+  };
+
+  const handleAdDisconnect = async () => {
+    setAdDisconnecting(true);
+    setAdSaveError('');
+    try {
+      await ad360CredentialsApi.delete();
+      disconnectProduct('ad360');
+      setAdServerUrl('');
+      setAdToken('');
+      setAdDefaultDomain('');
+      setShowAdTokenField(false);
+      setAdCredentials(null);
+      setAdConnectionTest(null);
+    } catch (err) {
+      setAdSaveError(mapApiError(err));
+    } finally {
+      setAdDisconnecting(false);
+    }
+  };
+
   const isConfigured = credentials?.configured ?? false;
+  const isAdConfigured = adCredentials?.configured ?? false;
 
   // Status badge
   let statusBadge: { label: string; className: string };
@@ -180,12 +280,23 @@ export default function ConnectionsPage() {
     statusBadge = { label: '⚠ Failed', className: 'bg-red-50 text-red-700 border-red-200' };
   }
 
+  let adStatusBadge: { label: string; className: string };
+  if (loadingStatus) {
+    adStatusBadge = { label: '○ Checking…', className: 'bg-slate-50 text-slate-400 border-slate-200' };
+  } else if (!isAdConfigured) {
+    adStatusBadge = { label: '○ Not Configured', className: 'bg-slate-50 text-slate-500 border-slate-200' };
+  } else if (adConnectionTest?.ok) {
+    adStatusBadge = { label: '● Connected', className: 'bg-green-50 text-green-700 border-green-200' };
+  } else {
+    adStatusBadge = { label: '⚠ Failed', className: 'bg-red-50 text-red-700 border-red-200' };
+  }
+
   return (
     <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Product Connections</h1>
         <p className="text-slate-500 mt-1">
-          Connect your ManageEngine Log360 instance to run evidence-backed compliance scoring.
+          Connect your ManageEngine Log360 and AD360 instances to run evidence-backed compliance scoring.
         </p>
       </div>
 
@@ -396,6 +507,189 @@ export default function ConnectionsPage() {
         )}
       </div>
 
+      <div className="card p-6 mt-6" style={{ borderTop: '4px solid #2563eb' }}>
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-bold text-slate-900">AD360 / ADManager Plus</h3>
+            <p className="text-sm text-slate-500 mt-1">Read-only AD posture evidence source (users, groups, computers).</p>
+            <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-400">
+              <Info className="w-3.5 h-3.5" />
+              <span>Backend proxy endpoint contract documented in docs/integrations/ad360/backend-proxy-spec.md</span>
+            </div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${adStatusBadge.className}`}>
+            {adStatusBadge.label}
+          </div>
+        </div>
+
+        {adSaveError ? (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+            {adSaveError}
+          </div>
+        ) : null}
+
+        {loadingStatus ? (
+          <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
+            <RefreshCw className="w-4 h-4 animate-spin" />
+            Loading connection status…
+          </div>
+        ) : isAdConfigured && !showAdTokenField ? (
+          <div className="space-y-4">
+            {adConnectionTest?.ok ? (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                  <span className="font-semibold text-green-800">Connected to AD360</span>
+                </div>
+                <div className="text-sm text-green-700 space-y-1">
+                  <p><strong>Server:</strong> {adCredentials?.baseUrl}</p>
+                  <p><strong>Default domain:</strong> {adCredentials?.defaultDomain ?? '—'}</p>
+                  <p><strong>Use proxy:</strong> {(adCredentials?.useProxy ?? true) ? 'Yes' : 'No'}</p>
+                  <p><strong>Token:</strong> <span>•••••</span> <span className="text-xs text-green-600">(stored on server)</span></p>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                  <span className="font-semibold text-red-800">Connection Failed</span>
+                </div>
+                <p className="text-sm text-red-700">
+                  {adConnectionTest?.error ?? 'AD360 connection test failed. Verify server URL, token, and default domain.'}
+                </p>
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => { void handleAdTestConnection(); }}
+                disabled={Boolean(connections.ad360.testing)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-70"
+              >
+                <Wifi className={`w-4 h-4 ${connections.ad360.testing ? 'animate-pulse' : ''}`} />
+                {connections.ad360.testing ? 'Checking…' : 'Test Connection'}
+              </button>
+              <button
+                onClick={() => setShowAdTokenField(true)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                <KeyRound className="w-4 h-4" />
+                Replace token
+              </button>
+              <button
+                onClick={() => { void handleAdDisconnect(); }}
+                disabled={adDisconnecting}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors disabled:opacity-70"
+              >
+                <WifiOff className="w-4 h-4" />
+                {adDisconnecting ? 'Disconnecting…' : 'Disconnect'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {showAdTokenField && isAdConfigured ? (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                Enter a new token below to replace the existing AD360 token.
+              </div>
+            ) : null}
+
+            <div>
+              <label htmlFor="ad360-server-url" className="block text-sm font-medium text-slate-700 mb-1">Server URL</label>
+              <input
+                id="ad360-server-url"
+                type="text"
+                value={adServerUrl}
+                onChange={(e) => setAdServerUrl(e.target.value)}
+                placeholder="http://admanagerplus.yourcompany.com:8080"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="ad360-auth-token" className="block text-sm font-medium text-slate-700 mb-1">Auth Token</label>
+              <input
+                id="ad360-auth-token"
+                type="password"
+                value={adToken}
+                onChange={(e) => setAdToken(e.target.value)}
+                placeholder="Paste technician authtoken"
+                autoComplete="new-password"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="ad360-default-domain" className="block text-sm font-medium text-slate-700 mb-1">Default Domain</label>
+              <input
+                id="ad360-default-domain"
+                type="text"
+                value={adDefaultDomain}
+                onChange={(e) => setAdDefaultDomain(e.target.value)}
+                placeholder="corp.example.com"
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+              <input
+                type="checkbox"
+                checked={adUseProxy}
+                onChange={(e) => setAdUseProxy(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300"
+              />
+              Use Proxy
+            </label>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { void handleAdSave(); }}
+                disabled={adSaving || !adServerUrl || !adToken || !adDefaultDomain}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {adSaving ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <Wifi className="w-4 h-4" />
+                    Save
+                  </>
+                )}
+              </button>
+              {showAdTokenField && isAdConfigured ? (
+                <button
+                  onClick={() => { setShowAdTokenField(false); setAdToken(''); }}
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              ) : null}
+              <button
+                onClick={() => { void handleAdTestConnection(); }}
+                disabled={Boolean(connections.ad360.testing)}
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-70"
+              >
+                <Wifi className={`w-4 h-4 ${connections.ad360.testing ? 'animate-pulse' : ''}`} />
+                Test Connection
+              </button>
+            </div>
+
+            <a
+              href="https://www.manageengine.com/products/ad-manager/active-directory-api/v2/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700"
+            >
+              <ExternalLink className="w-4 h-4" />
+              API Documentation
+            </a>
+          </div>
+        )}
+      </div>
+
       {anyConnected && (
         <div className="card p-6 bg-gradient-to-r from-green-50 to-teal-50 border-green-200 mt-8">
           <div className="flex items-center gap-3 mb-3">
@@ -403,7 +697,7 @@ export default function ConnectionsPage() {
             <h3 className="font-bold text-slate-900">Ready to Run Assessment</h3>
           </div>
           <p className="text-slate-600 text-sm mb-4">
-            Log360 is connected. View your evidence-backed compliance score dashboard.
+            At least one integration is connected. View your evidence-backed compliance score dashboard.
           </p>
           <Link to="/dashboard" className="btn-primary">
             <LayoutDashboard className="w-4 h-4" />

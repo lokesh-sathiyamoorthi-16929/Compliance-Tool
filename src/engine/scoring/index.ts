@@ -1,6 +1,7 @@
 import { getFrameworkById } from '../../data/frameworks';
 import type { Evidence } from '../../services/evidenceCollector';
 import type { Attestation } from '../../types';
+import type { Ad360SummaryResponse } from '../../types/ad360';
 import { runControlChecks } from '../controlChecks';
 import { scoreCmmiFramework } from './cmmiScoring';
 import { mapEvidenceToControlEvidence } from './evidenceMapping';
@@ -63,13 +64,14 @@ export function scoreFramework(
   options?: {
     rubricOverride?: ScoringRubric;
     attestations?: Record<string, Attestation[]>;
+    ad360Summary?: Ad360SummaryResponse | null;
   },
 ): FrameworkScore {
   const framework = getFrameworkById(frameworkId);
   const rubric: ScoringRubric = options?.rubricOverride ?? framework?.rubric ?? 'legacy';
 
   const normalizedEvidence = isEvidencePayload(evidence)
-    ? mapEvidenceToControlEvidence(frameworkId, evidence, options?.attestations)
+    ? mapEvidenceToControlEvidence(frameworkId, evidence, options?.attestations, new Date().toISOString(), options?.ad360Summary)
     : evidence;
 
   if (rubric === 'legacy' && isEvidencePayload(evidence) && (frameworkId === 'hipaa' || frameworkId === 'pcidss')) {

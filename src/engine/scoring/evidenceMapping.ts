@@ -1,5 +1,6 @@
 import type { Evidence } from '../../services/evidenceCollector';
 import type { Attestation, Control } from '../../types';
+import type { Ad360SummaryResponse } from '../../types/ad360';
 import { getControlsByFrameworkId } from '../../data/controls';
 import type { ControlEvidence } from './types';
 
@@ -33,11 +34,39 @@ function getAutomatedStatus(control: Control, evidence: Evidence | null): 'succe
   return 'success';
 }
 
+function getAd360AutomatedStatus(control: Control, summary: Ad360SummaryResponse | null): 'success' | 'failed' | 'unavailable' {
+  if (!summary) return 'unavailable';
+
+  switch (control.id) {
+    case 'HIPAA-164.308(a)(3)':
+      return summary.staleAccounts.count <= 5 ? 'success' : 'failed';
+    case 'HIPAA-164.308(a)(4)':
+    case 'ISO-A.5.15':
+      return summary.privilegedUsers.count <= 10 ? 'success' : 'failed';
+    case 'HIPAA-164.308(a)(5)': {
+      const threshold = 10;
+      return summary.users.lockedOut < threshold ? 'success' : 'failed';
+    }
+    case 'HIPAA-164.310':
+      return summary.computers.bitlockerEnabledPct >= 90 ? 'success' : 'failed';
+    case 'HIPAA-164.312(d)': {
+      const smartCardPct = summary.privilegedUsers.smartCardPct;
+      if (typeof smartCardPct !== 'number') return 'unavailable';
+      return smartCardPct >= 50 ? 'success' : 'failed';
+    }
+    case 'ISO-A.8.7':
+      return summary.computers.bitlockerEnabledPct >= 90 ? 'success' : 'failed';
+    default:
+      return 'unavailable';
+  }
+}
+
 export function mapEvidenceToControlEvidence(
   frameworkId: string,
   evidence: Evidence | null,
   attestations: Record<string, Attestation[]> = {},
   nowIso: string = new Date().toISOString(),
+  ad360Summary: Ad360SummaryResponse | null = null,
 ): ControlEvidence[] {
   const controls = getControlsByFrameworkId(frameworkId);
 
@@ -54,6 +83,12 @@ export function mapEvidenceToControlEvidence(
           raw: evidence,
           status: getAutomatedStatus(control, evidence),
           collectedAt: evidence?.collectedAt ?? nowIso,
+        },
+        {
+          source: 'ad360',
+          raw: ad360Summary,
+          status: getAd360AutomatedStatus(control, ad360Summary),
+          collectedAt: nowIso,
         },
       ],
       attestations: activeAttestations,

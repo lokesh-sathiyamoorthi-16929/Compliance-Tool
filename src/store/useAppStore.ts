@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { WizardAnswers, ConnectionState, Attestation } from '../types';
 import type { Evidence } from '../services/evidenceCollector';
+import type { Ad360SummaryResponse } from '../types/ad360';
 
 export type EvidenceErrorKey = keyof Evidence['errors'];
 
@@ -30,6 +31,8 @@ interface AppState {
   evidenceLoading: Partial<Record<EvidenceErrorKey | 'all', boolean>>;
   evidenceErrors: Partial<Record<EvidenceErrorKey, string>>;
   setLog360Evidence: (evidence: Evidence | null) => void;
+  ad360Summary: Ad360SummaryResponse | null;
+  setAd360Summary: (summary: Ad360SummaryResponse | null) => void;
   setEvidenceLoading: (key: EvidenceErrorKey | 'all', loading: boolean) => void;
   setEvidenceError: (key: EvidenceErrorKey, error?: string) => void;
   clearEvidenceErrors: () => void;
@@ -120,19 +123,26 @@ export const useAppStore = create<AppState>()(
             ...prev.connections,
             [product]: { ...defaultConnectionState },
           },
-          ...(product === 'log360'
-            ? {
-                log360Evidence: null,
-                evidenceErrors: {},
-                evidenceLoading: {},
-              }
-            : {}),
+            ...(product === 'log360'
+              ? {
+                  log360Evidence: null,
+                  evidenceErrors: {},
+                  evidenceLoading: {},
+                }
+              : {}),
+            ...(product === 'ad360'
+              ? {
+                  ad360Summary: null,
+                }
+              : {}),
         })),
 
       log360Evidence: null,
+      ad360Summary: null,
       evidenceLoading: {},
       evidenceErrors: {},
       setLog360Evidence: (log360Evidence) => set({ log360Evidence }),
+      setAd360Summary: (ad360Summary) => set({ ad360Summary }),
       setEvidenceLoading: (key, loading) =>
         set((prev) => ({
           evidenceLoading: {
