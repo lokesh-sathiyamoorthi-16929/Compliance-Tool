@@ -116,7 +116,7 @@ export class Ad360Client {
       const page = await loader({ ...opts, from, limit: pageLimit });
       rows.push(...page.data);
       total = page.meta.total_no_of_objects;
-      from = from + page.data.length;
+      from += page.data.length;
       if (page.data.length === 0) break;
     }
 

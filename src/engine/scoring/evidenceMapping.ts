@@ -55,7 +55,7 @@ function getAd360AutomatedStatus(control: Control, summary: Ad360SummaryResponse
       return smartCardPct >= 50 ? 'success' : 'failed';
     }
     case 'ISO-A.8.7':
-      return summary.computers.bitlockerEnabledPct >= 90 ? 'failed' : 'unavailable';
+      return summary.computers.bitlockerEnabledPct >= 90 ? 'success' : 'failed';
     default:
       return 'unavailable';
   }
