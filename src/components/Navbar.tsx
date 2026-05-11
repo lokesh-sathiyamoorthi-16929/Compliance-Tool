@@ -13,6 +13,7 @@ import {
   Users,
   Key,
   Activity,
+  FileCheck2,
 } from 'lucide-react';
 import { isDemoMode } from '../config/env';
 import { useAuthStore } from '../store/useAuthStore';
@@ -74,12 +75,17 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
 
   const goToCredentials = () => {
     setMenuOpen(false);
-    navigate('/admin/credentials');
+    navigate('/profile/credentials');
   };
 
   const goToLog360 = () => {
     setMenuOpen(false);
     navigate('/integrations/log360');
+  };
+
+  const goToAttestations = () => {
+    setMenuOpen(false);
+    navigate('/attestations');
   };
 
   return (
@@ -158,7 +164,7 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
                       >
                         <Key className="h-4 w-4" />
-                        Credentials
+                        API Credentials
                       </button>
                       <button
                         type="button"
@@ -167,6 +173,14 @@ export default function Navbar({ topOffsetClass = 'top-0' }: Props) {
                       >
                         <Activity className="h-4 w-4" />
                         Integrations · Log360
+                      </button>
+                      <button
+                        type="button"
+                        onClick={goToAttestations}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <FileCheck2 className="h-4 w-4" />
+                        Attestations
                       </button>
                     </>
                   )}

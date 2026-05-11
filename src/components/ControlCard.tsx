@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, ExternalLink, CheckCircle } from 'lucide-react';
 import { Control } from '../types';
 import { getProductById } from '../data/manageEngineProducts';
+import type { ControlScore } from '../engine/scoring';
 import { useAppStore } from '../store/useAppStore';
 import { runControlChecks } from '../engine/controlChecks';
 import { collectEvidence, type Evidence } from '../services/evidenceCollector';
@@ -10,9 +11,11 @@ import { Log360Client } from '../services/log360Client';
 
 interface Props {
   control: Control;
+  score?: ControlScore;
+  onAttest?: (control: Control) => void;
 }
 
-export default function ControlCard({ control }: Props) {
+export default function ControlCard({ control, score, onAttest }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [scoreState, setScoreState] = useState<'pass' | 'partial' | 'fail' | null>(null);
   const [scoring, setScoring] = useState(false);
@@ -22,20 +25,22 @@ export default function ControlCard({ control }: Props) {
   const setLog360Evidence = useAppStore((state) => state.setLog360Evidence);
   const updateConnection = useAppStore((state) => state.updateConnection);
 
-  const scoringFramework = useMemo(
+  const liveStateFramework = useMemo(
     () => (control.frameworkId === 'hipaa' || control.frameworkId === 'pcidss' ? control.frameworkId : null),
     [control.frameworkId],
   );
 
+  const showScoringCta = control.frameworkId === 'hipaa' || control.frameworkId === 'iso27001';
+
   const deriveControlState = useCallback((evidence: Evidence) => {
-    if (!scoringFramework) return null;
-    const checks = runControlChecks(scoringFramework, evidence).filter((check) => check.controlId === control.id);
+    if (!liveStateFramework) return null;
+    const checks = runControlChecks(liveStateFramework, evidence).filter((check) => check.controlId === control.id);
     if (checks.length === 0) return null;
     if (checks.some((check) => check.result.status === 'fail')) return 'fail';
     if (checks.some((check) => check.result.status === 'partial' || check.result.status === 'evidence_pending')) return 'partial';
     if (checks.some((check) => check.result.status === 'pass')) return 'pass';
     return null;
-  }, [control.id, scoringFramework]);
+  }, [control.id, liveStateFramework]);
 
   useEffect(() => {
     if (!connected || !log360Evidence) {
@@ -105,6 +110,11 @@ export default function ControlCard({ control }: Props) {
                   Out of IT Scope
                 </span>
               )}
+              {score ? (
+                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  L{score.achievedLevel} · {score.rubric.toUpperCase()}
+                </span>
+              ) : null}
               {scoreState && (
                 <span
                   className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
@@ -148,6 +158,18 @@ export default function ControlCard({ control }: Props) {
               <p className="text-xs text-slate-500">Weight</p>
               <p className="font-bold text-slate-900">{control.weight}/5</p>
             </div>
+            {!showScoringCta && onAttest ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onAttest(control);
+                }}
+                className="rounded-md border border-blue-200 bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
+              >
+                Attest
+              </button>
+            ) : null}
             {expanded ? (
               <ChevronUp className="w-5 h-5 text-slate-400" />
             ) : (
@@ -156,7 +178,7 @@ export default function ControlCard({ control }: Props) {
           </div>
         </div>
       </button>
-      {scoringFramework ? (
+      {showScoringCta ? (
         <div className="border-t border-slate-100 bg-white px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             {!connected ? (
@@ -181,6 +203,15 @@ export default function ControlCard({ control }: Props) {
                 {scoring ? 'Syncing…' : 'Sync Log360 → Score'}
               </button>
             )}
+            {onAttest ? (
+              <button
+                type="button"
+                onClick={() => onAttest(control)}
+                className="inline-flex items-center rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition"
+              >
+                Attest
+              </button>
+            ) : null}
             {scoreError ? <span className="text-xs text-red-600">{scoreError}</span> : null}
           </div>
         </div>
@@ -189,6 +220,20 @@ export default function ControlCard({ control }: Props) {
       {expanded && (
         <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50">
           {/* Technical Requirements */}
+          {score ? (
+            <div>
+              <h5 className="text-sm font-semibold text-slate-700 mb-2">Maturity Breakdown</h5>
+              <ul className="space-y-1">
+                {score.levelBreakdown.map((item) => (
+                  <li key={item.level} className="text-xs text-slate-600">
+                    <strong>L{item.level}</strong> · {item.achieved ? 'Achieved' : 'Missing'} · {item.reason}
+                  </li>
+                ))}
+              </ul>
+              {score.partialBasisNote ? <p className="mt-2 text-xs text-amber-700">{score.partialBasisNote}</p> : null}
+            </div>
+          ) : null}
+
           <div>
             <h5 className="text-sm font-semibold text-slate-700 mb-2">Technical Requirements</h5>
             <ul className="space-y-1">

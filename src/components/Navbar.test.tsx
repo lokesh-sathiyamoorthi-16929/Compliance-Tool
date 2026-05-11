@@ -53,5 +53,7 @@ describe('Navbar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /AU/i }));
     expect(screen.getByText('Integrations · Log360')).toBeInTheDocument();
+    expect(screen.getByText('API Credentials')).toBeInTheDocument();
+    expect(screen.getByText('Attestations')).toBeInTheDocument();
   });
 });
