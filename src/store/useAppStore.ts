@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { WizardAnswers, ConnectionState } from '../types';
+import { WizardAnswers, ConnectionState, Attestation } from '../types';
 import type { Evidence } from '../services/evidenceCollector';
 
 export type EvidenceErrorKey = keyof Evidence['errors'];
@@ -33,6 +33,12 @@ interface AppState {
   setEvidenceLoading: (key: EvidenceErrorKey | 'all', loading: boolean) => void;
   setEvidenceError: (key: EvidenceErrorKey, error?: string) => void;
   clearEvidenceErrors: () => void;
+
+  // Attestations
+  attestations: Record<string, Attestation[]>;
+  setControlAttestations: (controlId: string, rows: Attestation[]) => void;
+  upsertAttestation: (attestation: Attestation) => void;
+  clearControlAttestations: (controlId: string) => void;
 }
 
 const defaultWizardAnswers: WizardAnswers = {
@@ -56,6 +62,25 @@ const defaultConnectionState: ConnectionState = {
   lastConnectionLatencyMs: undefined,
   lastError: null,
 };
+
+const ATTESTATION_STORAGE_KEY = 'complianceiq-attestations-v1';
+
+function loadPersistedAttestations(): Record<string, Attestation[]> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(ATTESTATION_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, Attestation[]>;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function persistAttestations(attestations: Record<string, Attestation[]>) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(ATTESTATION_STORAGE_KEY, JSON.stringify(attestations));
+}
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -126,6 +151,35 @@ export const useAppStore = create<AppState>()(
           return { evidenceErrors: nextErrors };
         }),
       clearEvidenceErrors: () => set({ evidenceErrors: {} }),
+
+      attestations: loadPersistedAttestations(),
+      setControlAttestations: (controlId, rows) =>
+        set((prev) => {
+          const next = {
+            ...prev.attestations,
+            [controlId]: rows,
+          };
+          persistAttestations(next);
+          return { attestations: next };
+        }),
+      upsertAttestation: (attestation) =>
+        set((prev) => {
+          const current = prev.attestations[attestation.controlId] ?? [];
+          const nextRows = [...current.filter((row) => row.id !== attestation.id), attestation];
+          const next = {
+            ...prev.attestations,
+            [attestation.controlId]: nextRows.sort((a, b) => b.attestedAt.localeCompare(a.attestedAt)),
+          };
+          persistAttestations(next);
+          return { attestations: next };
+        }),
+      clearControlAttestations: (controlId) =>
+        set((prev) => {
+          const next = { ...prev.attestations };
+          delete next[controlId];
+          persistAttestations(next);
+          return { attestations: next };
+        }),
     }),
     {
       name: 'complianceiq-store',

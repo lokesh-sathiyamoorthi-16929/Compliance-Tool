@@ -24,6 +24,9 @@ export default function FrameworkCard({ framework, isMandatory }: Props) {
                 <CheckCircle className="w-3 h-3" /> Recommended
               </span>
             )}
+            <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+              {(framework.rubric ?? 'legacy').toUpperCase()}
+            </span>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className="font-bold text-slate-900 text-lg leading-tight">{framework.name}</h3>

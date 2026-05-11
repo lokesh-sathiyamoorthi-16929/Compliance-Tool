@@ -291,11 +291,13 @@ interface Control {
 
 ### Scoring Methodology
 
-```
-controlScore   = (passedChecks × weight) / (totalChecks × weight) × 100
-familyScore    = weighted average of control scores in the family
-frameworkScore = weighted average of family scores
-```
+Scoring Engine v2 now uses framework-specific maturity rubrics:
+
+- HIPAA → PRISMA 5-level maturity scoring
+- ISO 27001:2022 → CMMI 0-5 maturity scoring
+- Non-migrated frameworks remain on legacy scoring
+
+See full methodology and worked examples: [`docs/scoring/scoring-engine-v2.md`](./docs/scoring/scoring-engine-v2.md)
 
 ### Maturity Tiers
 

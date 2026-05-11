@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import ControlCard from './ControlCard';
 import { getControlsByFrameworkId } from '../data/controls';
 import { useAppStore } from '../store/useAppStore';
 import type { Evidence } from '../services/evidenceCollector';
 
-const sampleControl = getControlsByFrameworkId('hipaa')[0];
+const sampleHipaaControl = getControlsByFrameworkId('hipaa')[0];
+const sampleIsoControl = getControlsByFrameworkId('iso27001')[0];
 
 function makeEvidence(): Evidence {
   return {
@@ -52,10 +53,10 @@ describe('ControlCard scoring CTA state machine', () => {
 
   it('shows Connect Log360 CTA when disconnected and removes legacy copy', () => {
     render(
-      <MemoryRouter>
-        <ControlCard control={sampleControl} />
-      </MemoryRouter>,
-    );
+        <MemoryRouter>
+          <ControlCard control={sampleHipaaControl} />
+        </MemoryRouter>,
+      );
 
     expect(screen.getByRole('link', { name: 'Connect Log360 → Score' })).toHaveAttribute('href', '/connections');
     expect(screen.queryByText('Connect & Score')).not.toBeInTheDocument();
@@ -71,15 +72,39 @@ describe('ControlCard scoring CTA state machine', () => {
     }));
 
     render(
-      <MemoryRouter>
-        <ControlCard control={sampleControl} />
-      </MemoryRouter>,
-    );
+        <MemoryRouter>
+          <ControlCard control={sampleHipaaControl} />
+        </MemoryRouter>,
+      );
 
     expect(screen.getByRole('button', { name: 'Sync Log360 → Score' })).toBeInTheDocument();
   });
 
   it('shows Re-score CTA when connected and evidence is available', () => {
+    const onAttest = vi.fn();
+
+    useAppStore.setState((state) => ({
+      connections: {
+        ...state.connections,
+        log360: { ...state.connections.log360, connected: true },
+      },
+      log360Evidence: makeEvidence(),
+    }));
+
+    render(
+        <MemoryRouter>
+          <ControlCard control={sampleHipaaControl} onAttest={onAttest} />
+        </MemoryRouter>,
+      );
+
+    expect(screen.getByRole('button', { name: 'Re-score with live data' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Attest' }));
+    expect(onAttest).toHaveBeenCalledWith(sampleHipaaControl);
+  });
+
+  it('shows the scoring CTA and attest button for ISO 27001 controls', () => {
+    const onAttest = vi.fn();
+
     useAppStore.setState((state) => ({
       connections: {
         ...state.connections,
@@ -90,10 +115,12 @@ describe('ControlCard scoring CTA state machine', () => {
 
     render(
       <MemoryRouter>
-        <ControlCard control={sampleControl} />
+        <ControlCard control={sampleIsoControl} onAttest={onAttest} />
       </MemoryRouter>,
     );
 
     expect(screen.getByRole('button', { name: 'Re-score with live data' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Attest' }));
+    expect(onAttest).toHaveBeenCalledWith(sampleIsoControl);
   });
 });

@@ -1,6 +1,9 @@
 import { getMaturityTier } from '../utils/scoringEngine';
 import type { Evidence } from '../services/evidenceCollector';
 import type { EvaluatedControlCheck } from './controlChecks';
+import { scoreFramework as scoreFrameworkV2 } from './scoring';
+import type { FrameworkScore } from './scoring';
+import type { Attestation } from '../types';
 
 export interface ScoredControlResult {
   controlId: string;
@@ -23,7 +26,7 @@ function isApplicable(status: EvaluatedControlCheck['result']['status']): boolea
   return status !== 'evidence_pending' && status !== 'not_applicable';
 }
 
-export function scoreFramework(checks: EvaluatedControlCheck[], evidence: Evidence): FrameworkScoringResult {
+function scoreLegacyChecks(checks: EvaluatedControlCheck[], evidence: Evidence): FrameworkScoringResult {
   const checksByControl = new Map<string, EvaluatedControlCheck[]>();
 
   for (const check of checks) {
@@ -53,20 +56,14 @@ export function scoreFramework(checks: EvaluatedControlCheck[], evidence: Eviden
   const familyMap = new Map<string, { numerator: number; denominator: number; checkCount: number }>();
 
   for (const check of checks) {
-    if (check.result.status === 'evidence_pending' || check.result.status === 'not_applicable') {
-      continue;
-    }
-
+    if (!isApplicable(check.result.status)) continue;
     if (!familyMap.has(check.family)) {
       familyMap.set(check.family, { numerator: 0, denominator: 0, checkCount: 0 });
     }
-
-    const family = familyMap.get(check.family);
-    if (!family) continue;
-
-    family.numerator += check.result.score * check.weight;
-    family.denominator += 100 * check.weight;
-    family.checkCount += 1;
+    const familyData = familyMap.get(check.family)!;
+    familyData.numerator += check.result.score * check.weight;
+    familyData.denominator += 100 * check.weight;
+    familyData.checkCount += 1;
   }
 
   const familyScores = Array.from(familyMap.entries()).map(([family, data]) => ({
@@ -93,4 +90,25 @@ export function scoreFramework(checks: EvaluatedControlCheck[], evidence: Eviden
     pendingManualCount: checks.filter((check) => check.result.status === 'evidence_pending').length,
     lastEvidenceTimestamp: evidence.collectedAt,
   };
+}
+
+export function scoreFramework(
+  checks: EvaluatedControlCheck[],
+  evidence: Evidence,
+): FrameworkScoringResult;
+export function scoreFramework(
+  frameworkId: string,
+  evidence: Evidence,
+  options?: { rubricOverride?: 'prisma' | 'cmmi' | 'legacy'; attestations?: Record<string, Attestation[]> },
+): FrameworkScore;
+export function scoreFramework(
+  firstArg: EvaluatedControlCheck[] | string,
+  secondArg: Evidence,
+  options?: { rubricOverride?: 'prisma' | 'cmmi' | 'legacy'; attestations?: Record<string, Attestation[]> },
+): FrameworkScoringResult | FrameworkScore {
+  if (typeof firstArg === 'string') {
+    return scoreFrameworkV2(firstArg, secondArg, options);
+  }
+
+  return scoreLegacyChecks(firstArg, secondArg);
 }

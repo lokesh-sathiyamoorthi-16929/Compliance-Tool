@@ -1,6 +1,6 @@
 import { Framework } from '../types';
 
-export const frameworks: Framework[] = [
+const frameworkRecords: Framework[] = [
   {
     id: 'hipaa',
     name: 'HIPAA',
@@ -15,6 +15,39 @@ export const frameworks: Framework[] = [
     confidenceLevel: 'medium',
     validationStatus: 'interpreted',
     lastValidated: '2026-05-07',
+    rubric: 'prisma',
+    prismaConfig: {
+      safeguards: [
+        {
+          id: 'administrative',
+          controlIds: [
+            'HIPAA-164.308(a)(1)',
+            'HIPAA-164.308(a)(3)',
+            'HIPAA-164.308(a)(4)',
+            'HIPAA-164.308(a)(5)',
+            'HIPAA-164.308(a)(6)',
+            'HIPAA-164.308(a)(7)',
+          ],
+        },
+        {
+          id: 'physical',
+          controlIds: ['HIPAA-164.310'],
+        },
+        {
+          id: 'technical',
+          controlIds: [
+            'HIPAA-164.312(a)(1)',
+            'HIPAA-164.312(a)(2)(ii)',
+            'HIPAA-164.312(a)(2)(iii)',
+            'HIPAA-164.312(a)(2)(iv)',
+            'HIPAA-164.312(b)',
+            'HIPAA-164.312(c)',
+            'HIPAA-164.312(d)',
+            'HIPAA-164.312(e)',
+          ],
+        },
+      ],
+    },
   },
   {
     id: 'pcidss',
@@ -75,6 +108,31 @@ export const frameworks: Framework[] = [
     confidenceLevel: 'medium',
     validationStatus: 'interpreted',
     lastValidated: '2026-05-07',
+    rubric: 'cmmi',
+    cmmiConfig: {
+      themes: [
+        {
+          id: 'organizational',
+          name: 'Organizational',
+          controlIds: ['ISO-A.5.1', 'ISO-A.5.15', 'ISO-A.5.23'],
+        },
+        {
+          id: 'people',
+          name: 'People',
+          controlIds: ['ISO-A.6.3'],
+        },
+        {
+          id: 'physical',
+          name: 'Physical',
+          controlIds: [],
+        },
+        {
+          id: 'technological',
+          name: 'Technological',
+          controlIds: ['ISO-A.8.7', 'ISO-A.8.8', 'ISO-A.8.12', 'ISO-A.8.15', 'ISO-A.8.16', 'ISO-A.8.24'],
+        },
+      ],
+    },
   },
   {
     id: 'gdpr',
@@ -227,6 +285,11 @@ export const frameworks: Framework[] = [
     lastValidated: '2026-05-07',
   },
 ];
+
+export const frameworks: Framework[] = frameworkRecords.map((framework) => ({
+  ...framework,
+  rubric: framework.rubric ?? 'legacy',
+}));
 
 export const getFrameworkById = (id: string): Framework | undefined =>
   frameworks.find((f) => f.id === id);
