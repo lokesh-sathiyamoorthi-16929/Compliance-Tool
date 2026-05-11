@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, ExternalLink, CheckCircle } from 'lucide-react';
 import { Control } from '../types';
 import { getProductById } from '../data/manageEngineProducts';
+import { useAppStore } from '../store/useAppStore';
+import { runControlChecks } from '../engine/controlChecks';
+import { collectEvidence, type Evidence } from '../services/evidenceCollector';
+import { Log360Client } from '../services/log360Client';
 
 interface Props {
   control: Control;
@@ -9,6 +14,57 @@ interface Props {
 
 export default function ControlCard({ control }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [scoreState, setScoreState] = useState<'pass' | 'partial' | 'fail' | null>(null);
+  const [scoring, setScoring] = useState(false);
+  const [scoreError, setScoreError] = useState('');
+  const connected = useAppStore((state) => state.connections.log360.connected);
+  const log360Evidence = useAppStore((state) => state.log360Evidence);
+  const setLog360Evidence = useAppStore((state) => state.setLog360Evidence);
+  const updateConnection = useAppStore((state) => state.updateConnection);
+
+  const scoringFramework = useMemo(
+    () => (control.frameworkId === 'hipaa' || control.frameworkId === 'pcidss' ? control.frameworkId : null),
+    [control.frameworkId],
+  );
+
+  const deriveControlState = useCallback((evidence: Evidence) => {
+    if (!scoringFramework) return null;
+    const checks = runControlChecks(scoringFramework, evidence).filter((check) => check.controlId === control.id);
+    if (checks.length === 0) return null;
+    if (checks.some((check) => check.result.status === 'fail')) return 'fail';
+    if (checks.some((check) => check.result.status === 'partial' || check.result.status === 'evidence_pending')) return 'partial';
+    if (checks.some((check) => check.result.status === 'pass')) return 'pass';
+    return null;
+  }, [control.id, scoringFramework]);
+
+  useEffect(() => {
+    if (!connected || !log360Evidence) {
+      setScoreState(null);
+      return;
+    }
+    setScoreState(deriveControlState(log360Evidence));
+  }, [connected, deriveControlState, log360Evidence]);
+
+  const handleRescore = () => {
+    if (!connected || !log360Evidence) return;
+    setScoreError('');
+    setScoreState(deriveControlState(log360Evidence));
+  };
+
+  const handleSyncAndScore = async () => {
+    setScoring(true);
+    setScoreError('');
+    try {
+      const evidence = await collectEvidence(new Log360Client());
+      setLog360Evidence(evidence);
+      updateConnection('log360', { lastSync: evidence.collectedAt, connected: true });
+      setScoreState(deriveControlState(evidence));
+    } catch (error) {
+      setScoreError(error instanceof Error ? error.message : 'Failed to sync Log360 evidence.');
+    } finally {
+      setScoring(false);
+    }
+  };
 
   const categoryColors: Record<string, string> = {
     Technical: 'bg-blue-50 text-blue-700 border-blue-200',
@@ -49,6 +105,19 @@ export default function ControlCard({ control }: Props) {
                   Out of IT Scope
                 </span>
               )}
+              {scoreState && (
+                <span
+                  className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                    scoreState === 'pass'
+                      ? 'bg-green-50 text-green-700 border-green-200'
+                      : scoreState === 'partial'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                  }`}
+                >
+                  Live score: {scoreState === 'pass' ? 'Pass' : scoreState === 'partial' ? 'Partial' : 'Fail'}
+                </span>
+              )}
             </div>
             <h4 className="font-semibold text-slate-900">{control.title}</h4>
             <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{control.description}</p>
@@ -87,6 +156,35 @@ export default function ControlCard({ control }: Props) {
           </div>
         </div>
       </button>
+      {scoringFramework ? (
+        <div className="border-t border-slate-100 bg-white px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {!connected ? (
+              <Link to="/connections" className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition">
+                Connect Log360 → Score
+              </Link>
+            ) : log360Evidence ? (
+              <button
+                type="button"
+                onClick={handleRescore}
+                className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 transition"
+              >
+                Re-score with live data
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { void handleSyncAndScore(); }}
+                disabled={scoring}
+                className="inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 transition disabled:opacity-70"
+              >
+                {scoring ? 'Syncing…' : 'Sync Log360 → Score'}
+              </button>
+            )}
+            {scoreError ? <span className="text-xs text-red-600">{scoreError}</span> : null}
+          </div>
+        </div>
+      ) : null}
 
       {expanded && (
         <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50">

@@ -3,6 +3,7 @@ import { Eye, EyeOff, Key, Loader2, Plus, Trash2, Wifi } from 'lucide-react';
 import { ApiError } from '../../api/client';
 import { credentialsApi } from '../../api/credentials';
 import type { CredentialMeta, CreateCredentialPayload } from '../../api/credentials';
+import { useAppStore } from '../../store/useAppStore';
 
 function formatRelativeTime(dateStr: string | null): string {
   if (!dateStr) return '—';
@@ -47,6 +48,7 @@ interface FormErrors {
 }
 
 export default function CredentialsPage() {
+  const log360Connection = useAppStore((state) => state.connections.log360);
   const [credentials, setCredentials] = useState<CredentialMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState('');
@@ -198,6 +200,16 @@ export default function CredentialsPage() {
   };
 
   const StatusBadge = ({ cred }: { cred: CredentialMeta }) => {
+    if (cred.type === 'log360' && log360Connection.connected) {
+      return (
+        <span
+          className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700"
+          title={log360Connection.lastSync ? `Last sync: ${new Date(log360Connection.lastSync).toLocaleString()}` : undefined}
+        >
+          Connected
+        </span>
+      );
+    }
     if (!cred.lastTestAt) {
       return (
         <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
