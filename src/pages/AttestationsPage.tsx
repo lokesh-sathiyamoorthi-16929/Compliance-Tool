@@ -23,7 +23,7 @@ function levelLabel(frameworkRubric: 'prisma' | 'cmmi', level: number): string {
 }
 
 export default function AttestationsPage() {
-  const { log360Evidence, attestations, upsertAttestation, clearControlAttestations } = useAppStore();
+  const { log360Evidence, ad360Summary, attestations, upsertAttestation, clearControlAttestations } = useAppStore();
   const [activeControl, setActiveControl] = useState<Control | null>(null);
   const [activeLevel, setActiveLevel] = useState<number>(1);
   const [statement, setStatement] = useState('');
@@ -37,8 +37,8 @@ export default function AttestationsPage() {
 
   const frameworkScores = useMemo(() => {
     const entries = migratedFrameworks.map((framework) => {
-      const controlEvidence = mapEvidenceToControlEvidence(framework.id, log360Evidence, attestations);
-      const score = scoreFramework(framework.id, controlEvidence);
+      const controlEvidence = mapEvidenceToControlEvidence(framework.id, log360Evidence, attestations, new Date().toISOString(), ad360Summary);
+      const score = scoreFramework(framework.id, controlEvidence, { ad360Summary });
       return [framework.id, score] as const;
     });
     return new Map(entries);

@@ -76,7 +76,7 @@ export default function FrameworkDetailPage() {
   const navigate = useNavigate();
   const framework = getFrameworkById(id ?? '');
   const controls = getControlsByFrameworkId(id ?? '');
-  const { log360Evidence, connections, attestations } = useAppStore();
+  const { log360Evidence, connections, attestations, ad360Summary } = useAppStore();
   const log360Connected = connections.log360.connected;
 
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -92,7 +92,7 @@ export default function FrameworkDetailPage() {
 
   const frameworkScore =
     log360Evidence && connections.log360.connected
-      ? scoreFramework(framework.id, log360Evidence, { attestations, rubricOverride: framework.rubric })
+      ? scoreFramework(framework.id, log360Evidence, { attestations, ad360Summary, rubricOverride: framework.rubric })
       : null;
   const controlScoreById = new Map((frameworkScore?.controls ?? []).map((score) => [score.controlId, score]));
 

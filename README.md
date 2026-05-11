@@ -120,6 +120,12 @@ The frontend reads `VITE_API_BASE_URL` (default: `http://localhost:3001`) from `
 
 ---
 
+## 🔌 Integrations
+
+- AD360 / ADManager Plus → see `docs/integrations/ad360/`
+
+---
+
 ## 🔐 Log360 Architecture — Server-Side Proxy
 
 All Log360 v2 API traffic goes through the backend proxy. The browser never calls Log360 directly and never stores the Log360 auth token.

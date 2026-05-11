@@ -18,6 +18,7 @@ import CredentialsPage from './pages/admin/CredentialsPage';
 import { useAuthStore } from './store/useAuthStore';
 import { isDemoMode } from './config/env';
 import Log360DetailPage from './pages/integrations/Log360DetailPage';
+import Ad360DetailPage from './pages/integrations/Ad360DetailPage';
 import AttestationsPage from './pages/AttestationsPage';
 
 export default function App() {
@@ -72,6 +73,10 @@ export default function App() {
             <Route
               path="integrations/log360"
               element={isDemoMode() ? <Navigate to="/dashboard" replace /> : <Log360DetailPage />}
+            />
+            <Route
+              path="integrations/ad360"
+              element={isDemoMode() ? <Navigate to="/dashboard" replace /> : <Ad360DetailPage />}
             />
           </Route>
           <Route path="*" element={<NotFoundPage />} />
