@@ -135,7 +135,7 @@ The Log360 auth token is managed by the backend and never exposed to the browser
 | 49 | `simpleSearch(payload)` ☁️ | POST | `/api/v2/search` | Ad-hoc log search |
 | 50 | `aggregatedSearch(payload)` ☁️ | POST | `/api/v2/search/aggregate` | Faceted analytics |
 
-> **Note:** The canonical catalog has 49 tools. The table above includes 50 rows because `getIncident(id)` is a derived single-get call on top of the list endpoint.
+> **Note:** The canonical catalog has 49 tools. The table above numbers 50 rows because `getIncident(id)` (#26) is a derived single-get call on top of the list endpoint — both share the same Log360 API path but count as one canonical tool.
 
 ---
 
