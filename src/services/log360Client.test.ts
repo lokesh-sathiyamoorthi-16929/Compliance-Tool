@@ -177,4 +177,120 @@ describe('Log360Client', () => {
     expect(err.status).toBe(409);
     expect(err.code).toBe('LOG360_NOT_CONFIGURED');
   });
+
+  it('maps upstream 404 to NOT_AVAILABLE_IN_BUILD', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_FOUND', 'Not found.', 404),
+    );
+
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'NOT_AVAILABLE_IN_BUILD',
+      status: 404,
+    });
+  });
+
+  it('maps upstream 501 to NOT_AVAILABLE_IN_BUILD', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_IMPLEMENTED', 'Not implemented.', 501),
+    );
+
+    const log360 = new Log360Client();
+
+    await expect(log360.getLogSources()).rejects.toMatchObject({
+      kind: 'NOT_AVAILABLE_IN_BUILD',
+      status: 501,
+    });
+  });
+
+  it('getDetections() returns [] when endpoint returns NOT_AVAILABLE_IN_BUILD (404)', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_FOUND', 'Not found.', 404),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.getDetections();
+
+    expect(result).toEqual([]);
+  });
+
+  it('getDetections() returns real data when endpoint is available', async () => {
+    apiRequestMock.mockResolvedValue({ response: [{ detection_id: 'd1', severity: 'high' }] });
+
+    const log360 = new Log360Client();
+    const result = await log360.getDetections();
+
+    expect(result).toEqual([{ detection_id: 'd1', severity: 'high' }]);
+    const [path] = apiRequestMock.mock.calls[0];
+    expect(path).toBe('/integrations/log360/proxy/api/v2/detection/detections');
+  });
+
+  it('getMitreCatalog() returns [] when endpoint returns NOT_AVAILABLE_IN_BUILD (501)', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_IMPLEMENTED', 'Not implemented.', 501),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.getMitreCatalog();
+
+    expect(result).toEqual([]);
+  });
+
+  it('simpleSearch() returns [] when endpoint returns NOT_AVAILABLE_IN_BUILD', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_FOUND', 'Not found.', 404),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.simpleSearch({ query: 'host:server1' });
+
+    expect(result).toEqual([]);
+  });
+
+  it('simpleSearch() uses POST /api/v2/search with payload', async () => {
+    apiRequestMock.mockResolvedValue({ response: [{ message: 'login success' }] });
+
+    const log360 = new Log360Client();
+    const result = await log360.simpleSearch({ query: 'host:server1' });
+
+    expect(result).toEqual([{ message: 'login success' }]);
+    const [path, options] = apiRequestMock.mock.calls[0];
+    expect(path).toBe('/integrations/log360/proxy/api/v2/search');
+    expect((options as { method?: string })?.method).toBe('POST');
+  });
+
+  it('getAlertProfile() returns null when endpoint returns NOT_AVAILABLE_IN_BUILD', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_FOUND', 'Not found.', 404),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.getAlertProfile('p1');
+
+    expect(result).toBeNull();
+  });
+
+  it('aggregatedSearch() returns null when endpoint returns NOT_AVAILABLE_IN_BUILD', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('NOT_FOUND', 'Not found.', 404),
+    );
+
+    const log360 = new Log360Client();
+    const result = await log360.aggregatedSearch({ query: 'host:server1' });
+
+    expect(result).toBeNull();
+  });
+
+  it('getDetections() still throws for non-NOT_AVAILABLE_IN_BUILD errors', async () => {
+    apiRequestMock.mockRejectedValue(
+      new client.ApiError('LOG360_UNREACHABLE', 'Cannot reach Log360.', 502),
+    );
+
+    const log360 = new Log360Client();
+
+    await expect(log360.getDetections()).rejects.toMatchObject({
+      kind: 'NETWORK_ERROR',
+    });
+  });
 });

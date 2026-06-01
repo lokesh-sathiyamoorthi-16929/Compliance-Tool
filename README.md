@@ -123,6 +123,9 @@ The frontend reads `VITE_API_BASE_URL` (default: `http://localhost:3001`) from `
 ## 🔌 Integrations
 
 - AD360 / ADManager Plus → see `docs/integrations/ad360/`
+- Log360 → see `docs/integrations/log360/`
+  - [`api-reference.md`](docs/integrations/log360/api-reference.md) — canonical 49-endpoint inventory (Log360 Cloud API)
+  - [`coverage.md`](docs/integrations/log360/coverage.md) — which endpoints are implemented, skipped, or write-only
 
 ---
 
